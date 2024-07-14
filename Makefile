@@ -1,2 +1,3 @@
 # * FILE RUN GO
-GO_SERVER := ./cmd/server/main.go
+serve:  
+	go run ./cmd/server/main.go

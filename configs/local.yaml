@@ -1,17 +1,21 @@
 server:
   port: 8080
 
-mongodb:
-  uri: mongodb://localhost:27017
-  database: mydb
-
 mysql:
-  uri: mysql://localhost:3306
-  database: mydb
+  host: 127.0.0.1
+  port: 3306
+  username: root
+  password: admin
+  database: lofola
+  maxIdleConns: 10
+  maxOpenConns: 100
+  maxLifetime: 3600
 
 redis:
-  uri: redis://localhost:6379
-  database: 0
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
 
 sercurity:
   jwt:
