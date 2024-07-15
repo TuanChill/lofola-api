@@ -9,6 +9,7 @@
 *.dylib
 /configs/pro.yaml
 .idea/
+/tmp/
 
 # Test binary, build with `go test -c`
 *.test
