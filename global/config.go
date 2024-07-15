@@ -9,5 +9,5 @@ import (
 var (
 	Config setting.Config
 	MDB    *gorm.DB
-	MRB    *redis.Client
+	RDB    *redis.Client
 )

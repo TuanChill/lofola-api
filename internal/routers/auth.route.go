@@ -1,14 +1,14 @@
 package routers
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/tuanchill/lofola-api/internal/controller"
+	"github.com/tuanchill/lofola-api/pkg/utils"
+)
 
 func AuthRouter(r *gin.RouterGroup) {
 	auth := r.Group("/auth")
 	{
-		auth.POST("/register", func(c *gin.Context) {
-			c.JSON(200, gin.H{
-				"message": "register",
-			})
-		})
+		auth.POST("/register", utils.AsyncHandler(controller.NewAuthController().Register))
 	}
 }

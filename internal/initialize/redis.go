@@ -23,11 +23,12 @@ func InitRedis() {
 	for i := 0; i < maxRetries; i++ {
 		_, err := rdb.Ping(ctx).Result()
 		if err != nil {
-			fmt.Println("Redis connection failed, retrying...")
+			fmt.Println("Redis connection failed:: ", err)
+			fmt.Println("Retrying in 5 seconds")
 			time.Sleep(5 * time.Second)
 		} else {
 			fmt.Println("Redis connection successful")
-			global.MRB = rdb
+			global.RDB = rdb
 			return
 		}
 	}

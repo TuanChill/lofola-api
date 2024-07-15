@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/tuanchill/lofola-api/internal/service"
 	"github.com/tuanchill/lofola-api/pkg/response"
@@ -19,6 +21,7 @@ func (a *AuthController) Register(c *gin.Context) error {
 	if result == nil {
 		return nil
 	}
-	response.Created(c, "Register", result, nil)
+	fmt.Println(result)
+	response.Created(c, "Register successfully", result, nil)
 	return nil
 }

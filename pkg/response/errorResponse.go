@@ -1,8 +1,9 @@
 package response
 
 import (
-	"github.com/gin-gonic/gin"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // ErrorResponse represents the error response
@@ -11,6 +12,11 @@ type ErrorResponse struct {
 	Status  int    `json:"status"`
 	Code    int    `json:"code"`
 	Now     int64  `json:"now"`
+}
+
+type ErrorMsg struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
 }
 
 // NewErrorResponse creates a new ErrorResponse instance
@@ -40,6 +46,16 @@ func BadRequestError(c *gin.Context, code int, messages ...string) {
 		message = GetReasonPhrase(code)
 	}
 	NewErrorResponse(message, 400, code).Send(c)
+}
+
+func BadRequestErrorWithFields(c *gin.Context, code int, fields []ErrorMsg) {
+	c.AbortWithStatusJSON(400, gin.H{
+		"code":    code,
+		"message": GetReasonPhrase(code),
+		"status":  400,
+		"errors":  fields,
+		"now":     time.Now().Unix(),
+	})
 }
 
 // NotFoundError sends a 404 Not Found error response
