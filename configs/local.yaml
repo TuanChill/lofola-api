@@ -17,6 +17,8 @@ redis:
   password: ""
   db: 0
 
-sercurity:
-  jwt:
-    secret: mysecret
+security:
+  accessTokenSecret:
+    secret: "C3fCUEqGJuuC6CzlVa3hFIEzLPxdo7Zosj380VsBGQCJuejV06ILGXOA4l9hVMwu"
+  refreshTokenSecret:
+    secret: "yUXARio7KGlI58PYb3dvGgaTFshxTXls8ztDuW0Wx7b6GdmdtKHQAV1YiCYk3JtI"

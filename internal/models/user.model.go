@@ -20,7 +20,7 @@ type User struct {
 
 // register
 type UserRequestBody struct {
-	UserName string `json:"username" binding:"required,min=6,max=50"`
+	UserName string `json:"username" binding:"required,min=6,max=50,alphanum"`
 	Password string `json:"password" binding:"required,min=6,max=50"`
 	Email    string `json:"email" binding:"required,email"`
 	Phone    string `json:"phone,omitempty" binding:"omitempty,min=10,max=10"`
@@ -32,8 +32,33 @@ type UserResponseBody struct {
 	Phone    string `json:"phone"`
 }
 
-// Span user Redis
+// login
+type BodyLoginRequest struct {
+	Identifier string `json:"identifier" binding:"required,min=6"`
+	Password   string `json:"password" binding:"required,min=6,max=50"`
+}
+
+type LoginResponse struct {
+	ID       int         `json:"id"`
+	Email    string      `json:"email"`
+	UserName string      `json:"userName"`
+	Token    TokenStruct `json:"token"`
+}
+
+type TokenStruct struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+// Spam user Redis
 type SpamUserRedisResponse struct {
 	ExpireTime int  `json:"expire_spam"`
 	IsSpam     bool `json:"is_spam"`
+}
+
+// payload token
+type PayloadToken struct {
+	ID       int    `json:"id"`
+	Email    string `json:"email"`
+	UserName string `json:"userName"`
 }

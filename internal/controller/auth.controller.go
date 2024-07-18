@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tuanchill/lofola-api/internal/service"
@@ -21,7 +21,23 @@ func (a *AuthController) Register(c *gin.Context) error {
 	if result == nil {
 		return nil
 	}
-	fmt.Println(result)
 	response.Created(c, "Register successfully", result, nil)
+	return nil
+}
+
+// register controller
+func (a *AuthController) Login(c *gin.Context) error {
+	result := service.NewAuthService().Login(c)
+	if result == nil {
+		return nil
+	}
+
+	c.Header("Authorization", strings.Join([]string{"Bearer", result.Token.AccessToken}, " "))
+	c.Header("RefreshToken", result.Token.RefreshToken)
+
+	response.Ok(c, "Login successfully", gin.H{
+		"email":    result.Email,
+		"userName": result.UserName,
+	})
 	return nil
 }

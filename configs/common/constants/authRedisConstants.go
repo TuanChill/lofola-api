@@ -3,8 +3,8 @@ package constants
 import "time"
 
 const (
-	SpanKey      = "spam_user"
-	SpanKeyLogin = "spam_user_login"
+	SpamKey      = "spam_user"
+	SpamKeyLogin = "spam_user_login"
 )
 
 const (

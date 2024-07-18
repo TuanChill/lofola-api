@@ -2,9 +2,10 @@ package setting
 
 type Config struct {
 	// MongoDB MongoDbSetting
-	Mysql  MySQLSetting `mapstructure:"mysql"`
-	Redis  RedisSetting `mapstructure:"redis"`
-	Server ServerSetting
+	Mysql    MySQLSetting `mapstructure:"mysql"`
+	Redis    RedisSetting `mapstructure:"redis"`
+	Server   ServerSetting
+	Security SecurityConfig `mapstructure:"security"`
 }
 
 type MongoDbSetting struct {
@@ -31,4 +32,13 @@ type RedisSetting struct {
 
 type ServerSetting struct {
 	Port int `mapstructure:"port"`
+}
+
+type SecurityConfig struct {
+	AccessTokenSecret  SecretKey `mapstructure:"accessTokenSecret"`
+	RefreshTokenSecret SecretKey `mapstructure:"refreshTokenSecret"`
+}
+
+type SecretKey struct {
+	SecretKey string `mapstructure:"secret"`
 }

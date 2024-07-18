@@ -21,7 +21,10 @@ func getErrorMsg(fe validator.FieldError) string {
 		return "Minimum length is " + fe.Param()
 	case "max":
 		return "Maximum length is " + fe.Param()
+	case "alphanum":
+		return "This field must be alphanumeric"
 	}
+
 	return "Unknown error"
 }
 
