@@ -5,6 +5,8 @@ import "time"
 const (
 	SpamKey      = "spam_user"
 	SpamKeyLogin = "spam_user_login"
+	SpamKeyOTP   = "spam_user_otp"
+	OTPKey       = "otp_user"
 )
 
 const (

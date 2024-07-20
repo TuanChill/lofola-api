@@ -18,6 +18,16 @@ type User struct {
 	UpdateAt *time.Time `json:"update_at"`
 }
 
+// otp
+type UserResendOtp struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
+type UserVerifyOtp struct {
+	Email string `json:"email" binding:"required,email"`
+	Otp   int    `json:"otp" binding:"required,min=6,max=6,numeric`
+}
+
 // register
 type UserRequestBody struct {
 	UserName string `json:"username" binding:"required,min=6,max=50,alphanum"`

@@ -41,3 +41,21 @@ func (a *AuthController) Login(c *gin.Context) error {
 	})
 	return nil
 }
+
+func (a *AuthController) VerifyOtp(c *gin.Context) error {
+	result := service.NewAuthService().Verify(c)
+	if !result {
+		return nil
+	}
+	response.Ok(c, "Verify successfully", result)
+	return nil
+}
+
+func (a *AuthController) ResendOtp(c *gin.Context) error {
+	result := service.NewAuthService().ResendOtp(c)
+	if !result {
+		return nil
+	}
+	response.Ok(c, "Send OTP successfully", result)
+	return nil
+}

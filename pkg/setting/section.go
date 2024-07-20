@@ -6,6 +6,7 @@ type Config struct {
 	Redis    RedisSetting `mapstructure:"redis"`
 	Server   ServerSetting
 	Security SecurityConfig `mapstructure:"security"`
+	Mail     MailSetting    `mapstructure:"mail"`
 }
 
 type MongoDbSetting struct {
@@ -31,7 +32,9 @@ type RedisSetting struct {
 }
 
 type ServerSetting struct {
-	Port int `mapstructure:"port"`
+	Port    int    `mapstructure:"port"`
+	Mode    string `mapstructure:"mode"`
+	AppName string `mapstructure:"app"`
 }
 
 type SecurityConfig struct {
@@ -41,4 +44,11 @@ type SecurityConfig struct {
 
 type SecretKey struct {
 	SecretKey string `mapstructure:"secret"`
+}
+
+type MailSetting struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	UserName string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }

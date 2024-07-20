@@ -1,0 +1,30 @@
+server:
+  port: 8080
+  mode: "development"
+
+mysql:
+  host: 127.0.0.1
+  port: 3306
+  username: root
+  password: admin
+  database: lofola
+  maxIdleConns: 10
+  maxOpenConns: 100
+  maxLifetime: 3600
+
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+
+security:
+  accessTokenSecret:
+    secret: "C3fCUEqGJuuC6CzlVa3hFIEzLPxdo7Zosj380VsBGQCJuejV06ILGXOA4l9hVMwu"
+  refreshTokenSecret:
+    secret: "yUXARio7KGlI58PYb3dvGgaTFshxTXls8ztDuW0Wx7b6GdmdtKHQAV1YiCYk3JtI"
+mail:
+  host: smtp.gmail.com
+  port: 587
+  username: "foo@example.com"
+  password: "bar"

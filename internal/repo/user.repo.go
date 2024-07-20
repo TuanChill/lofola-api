@@ -45,3 +45,13 @@ func CreateUser(db *gorm.DB, data models.UserRequestBody) (models.User, error) {
 
 	return user, nil
 }
+
+func ActiveUser(db *gorm.DB, user models.User) error {
+	record := db.Model(&user).Update("is_active", true)
+
+	if record.Error != nil {
+		return record.Error
+	}
+
+	return nil
+}

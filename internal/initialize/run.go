@@ -1,7 +1,7 @@
 package initialize
 
 func Run() {
-	LoadConfig("./configs")
+	LoadConfig("./configs/yaml")
 
 	InitMysql()
 
