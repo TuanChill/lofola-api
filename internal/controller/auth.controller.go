@@ -59,3 +59,12 @@ func (a *AuthController) ResendOtp(c *gin.Context) error {
 	response.Ok(c, "Send OTP successfully", result)
 	return nil
 }
+
+func (a *AuthController) Logout(c *gin.Context) error {
+	result := service.NewAuthService().Logout(c)
+	if !result {
+		return nil
+	}
+	response.Ok(c, "Logout successfully", result)
+	return nil
+}

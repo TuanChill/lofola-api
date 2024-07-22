@@ -13,5 +13,6 @@ func AuthRouter(r *gin.RouterGroup) {
 		auth.POST("/login", utils.AsyncHandler(controller.NewAuthController().Login))
 		auth.POST("/resend-otp", utils.AsyncHandler(controller.NewAuthController().ResendOtp))
 		auth.POST("/verify-otp", utils.AsyncHandler(controller.NewAuthController().VerifyOtp))
+		auth.POST("/logout", utils.AsyncHandler(controller.NewAuthController().Logout))
 	}
 }

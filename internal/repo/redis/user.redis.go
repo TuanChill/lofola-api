@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -9,7 +10,9 @@ import (
 	"github.com/tuanchill/lofola-api/internal/models"
 )
 
-func SpamUser(ctx *gin.Context, rdb *redis.Client, key string, requestThreshold int64) *models.SpamUserRedisResponse {
+func SpamUser(ctx *gin.Context, rdb *redis.Client, email string, requestThreshold int64) *models.SpamUserRedisResponse {
+	key := fmt.Sprintf("%s_%s", constants.SpamKey, email)
+
 	numberRequest, err := rdb.Incr(ctx, key).Result()
 	if err != nil {
 		return nil

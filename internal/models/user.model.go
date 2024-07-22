@@ -14,7 +14,7 @@ type User struct {
 	Avatar   *string    `json:"avatar"`
 	Gender   *bool      `json:"gender" gorm:"default:null"`
 	IsActive bool       `json:"is_active" gorm:"default:false"`
-	CreateAt time.Time  `json:"create_at"`
+	CreateAt time.Time  `json:"create_at" gorm:"default:CURRENT_TIMESTAMP()"`
 	UpdateAt *time.Time `json:"update_at"`
 }
 

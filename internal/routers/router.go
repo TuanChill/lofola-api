@@ -8,6 +8,7 @@ import (
 )
 
 func NewRouter() *gin.Engine {
+	// set up mode for gin
 	var r *gin.Engine
 	mode := global.Config.Server.Mode
 	if mode == constants.DevMode {
@@ -21,6 +22,7 @@ func NewRouter() *gin.Engine {
 
 	//init middleware
 	r.Use(middleware.LoggerMiddleware())
+	r.Use(middleware.Cors())
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{

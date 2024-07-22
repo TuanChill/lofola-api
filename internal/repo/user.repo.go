@@ -2,7 +2,6 @@ package repo
 
 import (
 	"github.com/tuanchill/lofola-api/internal/models"
-	"github.com/tuanchill/lofola-api/pkg/helpers"
 	"gorm.io/gorm"
 )
 
@@ -34,7 +33,6 @@ func CreateUser(db *gorm.DB, data models.UserRequestBody) (models.User, error) {
 		Password: data.Password,
 		Email:    data.Email,
 		Phone:    &data.Phone,
-		CreateAt: helpers.GetTimeNow(),
 	}
 
 	record := db.Create(&user)

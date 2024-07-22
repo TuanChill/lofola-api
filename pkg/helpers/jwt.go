@@ -3,6 +3,7 @@ package helpers
 import (
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/tuanchill/lofola-api/configs/common/constants"
 	"github.com/tuanchill/lofola-api/global"
@@ -57,4 +58,28 @@ func VerifyToken(tokenString string, secretKey string) (*jwt.Token, error) {
 	}
 
 	return token, nil
+}
+
+func GetTokenFromHeader(c *gin.Context) (string, string) {
+	accToken := c.GetHeader("Authorization")
+	tokenStr := accToken[len("Bearer "):]
+
+	refToken := c.GetHeader("RefreshToken")
+
+	return tokenStr, refToken
+}
+
+func GetPayload(c *gin.Context) models.PayloadToken {
+	tokenStr, _ := GetTokenFromHeader(c)
+
+	tkn, _ := VerifyToken(tokenStr, global.Config.Security.AccessTokenSecret.SecretKey)
+	claims, _ := tkn.Claims.(jwt.MapClaims)
+
+	payload := models.PayloadToken{
+		ID:       claims["id"].(int),
+		Email:    claims["email"].(string),
+		UserName: claims["userName"].(string),
+	}
+
+	return payload
 }

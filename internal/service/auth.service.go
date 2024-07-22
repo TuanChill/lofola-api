@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tuanchill/lofola-api/configs/common/constants"
@@ -51,7 +52,7 @@ func (a *AuthService) Register(c *gin.Context) *models.UserResponseBody {
 	}
 
 	// check spam user
-	// if spamResponse := redis.SpamUser(c, global.RDB, constants.SpamKey, constants.RequestThreshold); spamResponse != nil {
+	// if spamResponse := redis.SpamUser(c, global.RDB, reqBody.Email, constants.RequestThreshold); spamResponse != nil {
 	// 	if spamResponse.IsSpam {
 	// 		ttl := fmt.Sprintf("You are blocked for %d seconds", spamResponse.ExpireTime)
 	// 		response.BadRequestError(c, response.ErrIpBlackList, ttl)
@@ -324,6 +325,37 @@ func (a *AuthService) ResendOtp(c *gin.Context) bool {
 		redis.DeleteOtpKey(c, global.RDB, reqBody.Email)
 		return false
 	}
+
+	return true
+}
+
+func (a *AuthService) Logout(c *gin.Context) bool {
+	accToken, refToken := helpers.GetTokenFromHeader(c)
+	if accToken == "" || refToken == "" {
+		response.BadRequestError(c, response.ErrCodeValidation, "Missing authorization header")
+		return false
+	}
+
+	// set token to blacklist
+	var wg sync.WaitGroup
+	wg.Add(2)
+	// save access token to blacklist
+	go func() {
+		defer wg.Done()
+		if err := redis.SaveAccessTokenBlack(c, global.RDB, utils.FormatKeyRedis(constants.AccessTokenBlack, accToken)); err != nil {
+			logger.LogError(fmt.Sprintf("Failed to save access token to blacklist: %v\n", err))
+		}
+	}()
+
+	// save refresh token to blacklist
+	go func() {
+		defer wg.Done()
+		if err := redis.SaveRefreshTokenBlack(c, global.RDB, utils.FormatKeyRedis(constants.RefreshTokenBlack, refToken)); err != nil {
+			logger.LogError(fmt.Sprintf("Failed to save refresh token to blacklist: %v\n", err))
+		}
+	}()
+
+	wg.Wait()
 
 	return true
 }
