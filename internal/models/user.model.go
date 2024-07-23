@@ -25,7 +25,7 @@ type UserResendOtp struct {
 
 type UserVerifyOtp struct {
 	Email string `json:"email" binding:"required,email"`
-	Otp   int    `json:"otp" binding:"required,min=6,max=6,numeric`
+	Otp   string `json:"otp" binding:"required,len=6,numeric"`
 }
 
 // register
@@ -33,7 +33,7 @@ type UserRequestBody struct {
 	UserName string `json:"username" binding:"required,min=6,max=50,alphanum"`
 	Password string `json:"password" binding:"required,min=6,max=50"`
 	Email    string `json:"email" binding:"required,email"`
-	Phone    string `json:"phone,omitempty" binding:"omitempty,min=10,max=10"`
+	Phone    string `json:"phone,omitempty" binding:"omitempty,len=10"`
 }
 
 type UserResponseBody struct {
@@ -71,4 +71,12 @@ type PayloadToken struct {
 	ID       int    `json:"id"`
 	Email    string `json:"email"`
 	UserName string `json:"userName"`
+}
+
+// Reset password
+type ResetPasswordRequest struct {
+	Email           string `json:"email" binding:"required,email"`
+	Password        string `json:"password" binding:"required,min=6,max=50"`
+	ConfirmPassword string `json:"confirm_password" binding:"required,min=6,max=50"`
+	Otp             string `json:"otp" binding:"required,len=6,numeric"`
 }

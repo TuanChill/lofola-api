@@ -53,3 +53,13 @@ func ActiveUser(db *gorm.DB, user models.User) error {
 
 	return nil
 }
+
+func ChangePassword(db *gorm.DB, user models.User, newPassword string) error {
+	record := db.Model(&user).Update("password", newPassword)
+
+	if record.Error != nil {
+		return record.Error
+	}
+
+	return nil
+}

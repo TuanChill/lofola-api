@@ -28,12 +28,12 @@ func (sr *SuccessResponse) Send(c *gin.Context) {
 	c.JSON(sr.StatusCode, sr)
 }
 
-func Ok(c *gin.Context, message string, metadata any) {
+func Ok(c *gin.Context, message string, data any) {
 	if message == "" {
 		message = GetReasonPhrase(StatusOK)
 	}
 
-	response := NewSuccessResponse(message, nil, StatusOK, StatusOK, metadata, nil)
+	response := NewSuccessResponse(message, data, StatusOK, StatusOK, nil, nil)
 
 	response.Send(c)
 }

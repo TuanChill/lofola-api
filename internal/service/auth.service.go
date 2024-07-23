@@ -97,8 +97,6 @@ func (a *AuthService) Register(c *gin.Context) *models.UserResponseBody {
 		return nil
 	}
 
-	fmt.Println("hashedPassword", hashedPassword)
-
 	reqBody.Password = hashedPassword
 
 	// create user
@@ -247,7 +245,7 @@ func (a *AuthService) Verify(c *gin.Context) bool {
 	}
 
 	// compare otp
-	if otp != fmt.Sprintf("%d", reqBody.Otp) {
+	if otp != reqBody.Otp {
 		response.BadRequestError(c, response.ErrCodeResourceConflict, "OTP is incorrect")
 		return false
 	}
@@ -358,6 +356,73 @@ func (a *AuthService) Logout(c *gin.Context) bool {
 	wg.Wait()
 
 	return true
+}
+
+func (a *AuthService) ResetPassword(c *gin.Context) bool {
+	var reqBody *models.ResetPasswordRequest
+
+	// get and validate
+	if err := c.ShouldBindBodyWithJSON(&reqBody); err != nil {
+		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidRequest, utils.GetObjMessage(err))
+		return false
+	}
+
+	// check password is the same
+	if reqBody.Password != reqBody.ConfirmPassword {
+		response.BadRequestError(c, response.ErrCodeValidation, "Password and confirm password are not the same")
+		return false
+	}
+
+	// get user by email
+	user, err := repo.GetDetailUserByEmail(global.MDB, reqBody.Email)
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			response.BadRequestError(c, response.ErrCodeResourceConflict, err.Error())
+			return false
+		} else {
+			response.BadRequestError(c, response.ErrCodeResourceConflict, "Email not found")
+			return false
+		}
+	}
+
+	// check otp is correct
+	otp, err := redis.GetOtpKey(c, global.RDB, reqBody.Email)
+	if err != nil {
+		response.BadRequestError(c, response.ErrCodeResourceConflict, err.Error())
+		return false
+	}
+
+	if otp == "" {
+		response.BadRequestError(c, response.ErrCodeResourceConflict, "OTP is expired, please resend OTP")
+		return false
+	}
+
+	if otp != reqBody.Otp {
+		response.BadRequestError(c, response.ErrCodeResourceConflict, "OTP is incorrect")
+		return false
+	}
+
+	// compare new password and old password, it's must be not the same
+	if err := helpers.ComparePassword(user.Password, reqBody.Password); err == nil {
+		response.BadRequestError(c, response.ErrCodeValidation, "The new password must not be the same as the old password")
+		return false
+	}
+
+	// hash password
+	hashedPassword, err := helpers.HashPassword(reqBody.Password)
+	if err != nil {
+		response.InternalServerError(c, response.ErrCodeInternalServer)
+		return false
+	}
+
+	// update password
+	if err := repo.ChangePassword(global.MDB, user, hashedPassword); err != nil {
+		response.InternalServerError(c, response.ErrCodeDBQuery)
+		return false
+	}
+
+	return true
+
 }
 
 func checkOtpAlreadySent(c *gin.Context, email string) error {

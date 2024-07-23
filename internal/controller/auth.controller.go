@@ -68,3 +68,12 @@ func (a *AuthController) Logout(c *gin.Context) error {
 	response.Ok(c, "Logout successfully", result)
 	return nil
 }
+
+func (a *AuthController) ResetPassword(c *gin.Context) error {
+	result := service.NewAuthService().ResetPassword(c)
+	if !result {
+		return nil
+	}
+	response.Ok(c, "Reset password successfully", result)
+	return nil
+}
