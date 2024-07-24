@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -11,12 +13,12 @@ import (
 )
 
 func JwtProvider(payload models.PayloadToken) (string, string, error) {
-	accessToken, err := generateAccessToken(payload)
+	accessToken, err := GenerateAccessToken(payload)
 	if err != nil {
 		return "", "", err
 	}
 
-	refreshToken, err := generateRefreshToken(payload)
+	refreshToken, err := GenerateRefreshToken(payload)
 	if err != nil {
 		return "", "", err
 	}
@@ -24,24 +26,26 @@ func JwtProvider(payload models.PayloadToken) (string, string, error) {
 	return accessToken, refreshToken, nil
 }
 
-func generateAccessToken(payload models.PayloadToken) (string, error) {
+func GenerateAccessToken(payload models.PayloadToken) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":       payload.ID,
+		"id":       strconv.Itoa(payload.ID),
 		"email":    payload.Email,
 		"userName": payload.UserName,
-		"exp":      time.Now().Add(constants.ExpiresAccessToken).Unix(),
+		"exp":      time.Now().Add(time.Duration(constants.ExpiresAccessToken) * time.Second).Unix(),
+		"iat":      time.Now().Unix(),
 	})
 
 	tokenStr, err := token.SignedString([]byte(global.Config.Security.AccessTokenSecret.SecretKey))
 	return tokenStr, err
 }
 
-func generateRefreshToken(payload models.PayloadToken) (string, error) {
+func GenerateRefreshToken(payload models.PayloadToken) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":       payload.ID,
+		"id":       strconv.Itoa(payload.ID),
 		"email":    payload.Email,
 		"userName": payload.UserName,
-		"exp":      time.Now().Add(constants.ExpiresRefreshToken).Unix(),
+		"exp":      time.Now().Add(time.Duration(constants.ExpiresRefreshToken) * time.Second).Unix(), // Expiration time
+		"iat":      time.Now().Unix(),                                                                 // Issued at
 	})
 
 	tokenStr, err := token.SignedString([]byte(global.Config.Security.RefreshTokenSecret.SecretKey))
@@ -50,6 +54,9 @@ func generateRefreshToken(payload models.PayloadToken) (string, error) {
 
 func VerifyToken(tokenString string, secretKey string) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
 		return []byte(secretKey), nil
 	})
 
@@ -60,13 +67,16 @@ func VerifyToken(tokenString string, secretKey string) (*jwt.Token, error) {
 	return token, nil
 }
 
+// GetTokenFromHeader return access Token and Refresh Token
 func GetTokenFromHeader(c *gin.Context) (string, string) {
 	accToken := c.GetHeader("Authorization")
-	tokenStr := accToken[len("Bearer "):]
+	if accToken != "" {
+		accToken = accToken[len("Bearer "):]
+	}
 
 	refToken := c.GetHeader("RefreshToken")
 
-	return tokenStr, refToken
+	return accToken, refToken
 }
 
 func GetPayload(c *gin.Context) models.PayloadToken {
@@ -75,11 +85,33 @@ func GetPayload(c *gin.Context) models.PayloadToken {
 	tkn, _ := VerifyToken(tokenStr, global.Config.Security.AccessTokenSecret.SecretKey)
 	claims, _ := tkn.Claims.(jwt.MapClaims)
 
+	idStr, _ := claims["id"].(string)
+	id, _ := strconv.Atoi(idStr) // Convert the ID from string to int
+
 	payload := models.PayloadToken{
-		ID:       claims["id"].(int),
+		ID:       id,
 		Email:    claims["email"].(string),
 		UserName: claims["userName"].(string),
 	}
 
 	return payload
+}
+
+func ExtractToken(token *jwt.Token) models.PayloadToken {
+	claims, _ := token.Claims.(jwt.MapClaims)
+
+	idStr, _ := claims["id"].(string)
+	id, _ := strconv.Atoi(idStr) // Convert the ID from string to int
+
+	payload := models.PayloadToken{
+		ID:       id,
+		Email:    claims["email"].(string),
+		UserName: claims["userName"].(string),
+	}
+
+	return payload
+}
+
+func FormatBearToken(token string) string {
+	return fmt.Sprintf("Bearer %s", token)
 }

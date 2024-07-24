@@ -4,7 +4,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/tuanchill/lofola-api/configs/common/constants"
 	"github.com/tuanchill/lofola-api/internal/service"
+	"github.com/tuanchill/lofola-api/pkg/helpers"
 	"github.com/tuanchill/lofola-api/pkg/response"
 )
 
@@ -32,8 +34,8 @@ func (a *AuthController) Login(c *gin.Context) error {
 		return nil
 	}
 
-	c.Header("Authorization", strings.Join([]string{"Bearer", result.Token.AccessToken}, " "))
-	c.Header("RefreshToken", result.Token.RefreshToken)
+	helpers.SetHeaderResponse(c.Writer, constants.AuthorizationHeader, strings.Join([]string{"Bearer", result.Token.AccessToken}, " "))
+	helpers.SetHeaderResponse(c.Writer, constants.RefreshTokenHeader, result.Token.RefreshToken)
 
 	response.Ok(c, "Login successfully", gin.H{
 		"email":    result.Email,
@@ -75,5 +77,14 @@ func (a *AuthController) ResetPassword(c *gin.Context) error {
 		return nil
 	}
 	response.Ok(c, "Reset password successfully", result)
+	return nil
+}
+
+func (a *AuthController) RefreshToken(c *gin.Context) error {
+	result := service.NewAuthService().RefreshToken(c)
+	if result == nil {
+		return nil
+	}
+	response.Ok(c, "Get new access token successfully", result)
 	return nil
 }

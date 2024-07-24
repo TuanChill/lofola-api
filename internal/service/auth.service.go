@@ -174,7 +174,7 @@ func (a *AuthService) Login(c *gin.Context) *models.LoginResponse {
 
 	// check password
 	if err := helpers.ComparePassword(user.Password, reqBody.Password); err != nil {
-		response.BadRequestError(c, response.ErrCodeResourceConflict, "Password is incorrect")
+		response.BadRequestError(c, response.ErrCodeLoginFailed, "Password is incorrect")
 		return nil
 	}
 
@@ -340,7 +340,7 @@ func (a *AuthService) Logout(c *gin.Context) bool {
 	// save access token to blacklist
 	go func() {
 		defer wg.Done()
-		if err := redis.SaveAccessTokenBlack(c, global.RDB, utils.FormatKeyRedis(constants.AccessTokenBlack, accToken)); err != nil {
+		if err := redis.SaveAccessTokenBlack(c, global.RDB, accToken); err != nil {
 			logger.LogError(fmt.Sprintf("Failed to save access token to blacklist: %v\n", err))
 		}
 	}()
@@ -348,7 +348,7 @@ func (a *AuthService) Logout(c *gin.Context) bool {
 	// save refresh token to blacklist
 	go func() {
 		defer wg.Done()
-		if err := redis.SaveRefreshTokenBlack(c, global.RDB, utils.FormatKeyRedis(constants.RefreshTokenBlack, refToken)); err != nil {
+		if err := redis.SaveRefreshTokenBlack(c, global.RDB, refToken); err != nil {
 			logger.LogError(fmt.Sprintf("Failed to save refresh token to blacklist: %v\n", err))
 		}
 	}()
@@ -423,6 +423,47 @@ func (a *AuthService) ResetPassword(c *gin.Context) bool {
 
 	return true
 
+}
+
+func (a *AuthService) RefreshToken(c *gin.Context) error {
+	_, refreshToken := helpers.GetTokenFromHeader(c)
+	if refreshToken == "" {
+		response.BadRequestError(c, response.ErrCodeInvalidRequest, "Refresh Token is required")
+		return nil
+	}
+
+	// check token in black list
+	ok, err := redis.IsTokenBlack(c, global.RDB, utils.FormatKeyRedis(constants.RefreshTokenBlack, refreshToken))
+	if err != nil {
+		response.InternalServerError(c, response.ErrCodeCacheConnection, "Internal Server Error")
+		return nil
+	}
+
+	if ok {
+		response.ForbiddenError(c, response.ErrCodeForbidden, "Forbidden")
+		return nil
+	}
+
+	// validate refresh token
+	data, err := helpers.VerifyToken(refreshToken, global.Config.Security.RefreshTokenSecret.SecretKey)
+	if err != nil {
+		response.ForbiddenError(c, response.ErrCodeAuthTokenInvalid, err.Error())
+		return nil
+	}
+
+	payload := helpers.ExtractToken(data)
+
+	//generate access token
+	accessToken, err := helpers.GenerateAccessToken(payload)
+	if err != nil {
+		response.InternalServerError(c, response.ErrCodeInternalServer, "Fail to generate access token")
+		return nil
+	}
+
+	// set acctoken in header
+	helpers.SetHeaderResponse(c.Writer, constants.AuthorizationHeader, helpers.FormatBearToken(accessToken))
+
+	return nil
 }
 
 func checkOtpAlreadySent(c *gin.Context, email string) error {
