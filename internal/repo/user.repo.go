@@ -1,6 +1,8 @@
 package repo
 
 import (
+	"time"
+
 	"github.com/tuanchill/lofola-api/internal/models"
 	"gorm.io/gorm"
 )
@@ -62,4 +64,31 @@ func ChangePassword(db *gorm.DB, user models.User, newPassword string) error {
 	}
 
 	return nil
+}
+
+func UpdateUser(db *gorm.DB, userID int, data *models.UserProfileUpdateRq) error {
+
+	record := db.Model(&models.User{}).Where("id = ?", userID).Updates(map[string]interface{}{
+		"full_name": data.FullName,
+		"phone":     data.Phone,
+		"gender":    data.Gender,
+		"birth_day": data.BirthDay,
+		"update_at": time.Now(),
+	})
+
+	if record.Error != nil {
+		return record.Error
+	}
+
+	return nil
+}
+func GetInfoUser(db *gorm.DB, userId int) (models.UserInfo, error) {
+	var userRes models.UserInfo
+	record := db.Model(&models.User{}).Where("id = ?", userId).Scan(&userRes)
+
+	if record.Error != nil {
+		return models.UserInfo{}, record.Error
+	}
+
+	return userRes, nil
 }

@@ -47,7 +47,7 @@ func (a *AuthService) Register(c *gin.Context) *models.UserResponseBody {
 	reqBody := models.UserRequestBody{}
 
 	if err := c.ShouldBindJSON(&reqBody); err != nil {
-		response.BadRequestErrorWithFields(c, response.ErrCodeValidation, utils.GetObjMessage(err))
+		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidInput, utils.GetObjMessage(err))
 		return nil
 	}
 
@@ -134,7 +134,7 @@ func (a *AuthService) Login(c *gin.Context) *models.LoginResponse {
 
 	// get and validate
 	if err := c.ShouldBindBodyWithJSON(&reqBody); err != nil {
-		response.BadRequestErrorWithFields(c, response.ErrCodeValidation, utils.GetObjMessage(err))
+		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidInput, utils.GetObjMessage(err))
 		return nil
 	}
 
@@ -211,7 +211,7 @@ func (a *AuthService) Verify(c *gin.Context) bool {
 
 	// get and validate
 	if err := c.ShouldBindBodyWithJSON(&reqBody); err != nil {
-		response.BadRequestErrorWithFields(c, response.ErrCodeValidation, utils.GetObjMessage(err))
+		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidInput, utils.GetObjMessage(err))
 		return false
 	}
 
@@ -271,7 +271,7 @@ func (a *AuthService) ResendOtp(c *gin.Context) bool {
 
 	// get and validate
 	if err := c.ShouldBindBodyWithJSON(&reqBody); err != nil {
-		response.BadRequestErrorWithFields(c, response.ErrCodeValidation, utils.GetObjMessage(err))
+		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidInput, utils.GetObjMessage(err))
 		return false
 	}
 
@@ -363,7 +363,7 @@ func (a *AuthService) ResetPassword(c *gin.Context) bool {
 
 	// get and validate
 	if err := c.ShouldBindBodyWithJSON(&reqBody); err != nil {
-		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidRequest, utils.GetObjMessage(err))
+		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidInput, utils.GetObjMessage(err))
 		return false
 	}
 

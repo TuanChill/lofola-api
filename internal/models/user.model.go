@@ -9,13 +9,27 @@ type User struct {
 	UserName string     `json:"username" gorm:"size:50;not null;unique"`
 	Password string     `json:"password"`
 	Email    string     `json:"email" gorm:"size:255;not null;unique"`
-	Phone    *string    `json:"phone" gorm:"size:10"`
+	Phone    *string    `json:"phone" gorm:"size:10;unique"`
 	FullName *string    `json:"full_name" gorm:"size:100"`
+	BirthDay *time.Time `json:"birthday"`
 	Avatar   *string    `json:"avatar"`
 	Gender   *bool      `json:"gender" gorm:"default:null"`
 	IsActive bool       `json:"is_active" gorm:"default:false"`
 	CreateAt time.Time  `json:"create_at" gorm:"default:CURRENT_TIMESTAMP()"`
 	UpdateAt *time.Time `json:"update_at"`
+}
+
+type UserInfo struct {
+	ID       uint      `json:"id"`
+	UserName string    `json:"username"`
+	Email    string    `json:"email"`
+	Phone    string    `json:"phone"`
+	FullName string    `json:"full_name"`
+	BirthDay time.Time `json:"birthday"`
+	Avatar   string    `json:"avatar"`
+	Gender   bool      `json:"gender"`
+	CreateAt time.Time `json:"create_at"`
+	UpdateAt time.Time `json:"update_at"`
 }
 
 // otp
@@ -79,4 +93,13 @@ type ResetPasswordRequest struct {
 	Password        string `json:"password" binding:"required,min=6,max=50"`
 	ConfirmPassword string `json:"confirm_password" binding:"required,min=6,max=50"`
 	Otp             string `json:"otp" binding:"required,len=6,numeric"`
+}
+
+//  update profile
+
+type UserProfileUpdateRq struct {
+	Phone    string `json:"phone" binding:"omitempty,len=10"`
+	FullName string `json:"full_name" binding:"omitempty,min=6,max=100"`
+	Gender   bool   `json:"gender" binding:"omitempty"`
+	BirthDay string `json:"birthday" binding:"omitempty,birthday"`
 }

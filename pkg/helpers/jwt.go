@@ -79,6 +79,7 @@ func GetTokenFromHeader(c *gin.Context) (string, string) {
 	return accToken, refToken
 }
 
+// GetPayload return payload from token
 func GetPayload(c *gin.Context) models.PayloadToken {
 	tokenStr, _ := GetTokenFromHeader(c)
 

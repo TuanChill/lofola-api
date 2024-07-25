@@ -35,6 +35,7 @@ func NewRouter() *gin.Engine {
 		v1 := api.Group("/v1")
 		{
 			AuthRouter(v1)
+			UserRouter(v1)
 		}
 	}
 
