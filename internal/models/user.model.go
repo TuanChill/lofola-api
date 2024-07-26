@@ -12,7 +12,7 @@ type User struct {
 	Phone    *string    `json:"phone" gorm:"size:10;unique"`
 	FullName *string    `json:"full_name" gorm:"size:100"`
 	BirthDay *time.Time `json:"birthday"`
-	Avatar   *string    `json:"avatar"`
+	Avatar   string     `json:"avatar"`
 	Gender   *bool      `json:"gender" gorm:"default:null"`
 	IsActive bool       `json:"is_active" gorm:"default:false"`
 	CreateAt time.Time  `json:"create_at" gorm:"default:CURRENT_TIMESTAMP()"`
@@ -44,10 +44,10 @@ type UserVerifyOtp struct {
 
 // register
 type UserRequestBody struct {
-	UserName string `json:"username" binding:"required,min=6,max=50,alphanum"`
-	Password string `json:"password" binding:"required,min=6,max=50"`
-	Email    string `json:"email" binding:"required,email"`
-	Phone    string `json:"phone,omitempty" binding:"omitempty,len=10"`
+	UserName string  `json:"username" binding:"required,min=6,max=50,alphanum"`
+	Password string  `json:"password" binding:"required,min=6,max=50"`
+	Email    string  `json:"email" binding:"required,email"`
+	Phone    *string `json:"phone,omitempty" binding:"omitempty,len=10"`
 }
 
 type UserResponseBody struct {

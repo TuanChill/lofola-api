@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -129,7 +130,7 @@ func (a *AuthService) Register(c *gin.Context) *models.UserResponseBody {
 	}
 }
 
-func (a *AuthService) Login(c *gin.Context) *models.LoginResponse {
+func (a *AuthService) Login(c *gin.Context) *models.UserInfo {
 	var reqBody *models.BodyLoginRequest
 
 	// get and validate
@@ -141,7 +142,7 @@ func (a *AuthService) Login(c *gin.Context) *models.LoginResponse {
 	//  check identifier is email or username
 	caseIdentifier := helpers.CheckIdentifier(reqBody.Identifier)
 
-	var user models.User // Giả sử User là kiểu dữ liệu của người dùng, thay bằng kiểu dữ liệu thực tế của bạn
+	var user models.User
 	var err error
 
 	switch caseIdentifier {
@@ -195,14 +196,20 @@ func (a *AuthService) Login(c *gin.Context) *models.LoginResponse {
 		return nil
 	}
 
-	return &models.LoginResponse{
-		ID:       int(user.ID),
-		Email:    user.Email,
+	helpers.SetHeaderResponse(c.Writer, constants.AuthorizationHeader, strings.Join([]string{"Bearer", accessToken}, " "))
+	helpers.SetHeaderResponse(c.Writer, constants.RefreshTokenHeader, refreshToken)
+
+	return &models.UserInfo{
+		ID:       user.ID,
 		UserName: user.UserName,
-		Token: models.TokenStruct{
-			AccessToken:  accessToken,
-			RefreshToken: refreshToken,
-		},
+		Email:    user.Email,
+		Phone:    *user.Phone,
+		FullName: *user.FullName,
+		BirthDay: *user.BirthDay,
+		Avatar:   user.Avatar,
+		Gender:   *user.Gender,
+		CreateAt: user.CreateAt,
+		UpdateAt: *user.UpdateAt,
 	}
 }
 

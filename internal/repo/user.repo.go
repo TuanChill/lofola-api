@@ -34,7 +34,7 @@ func CreateUser(db *gorm.DB, data models.UserRequestBody) (models.User, error) {
 		UserName: data.UserName,
 		Password: data.Password,
 		Email:    data.Email,
-		Phone:    &data.Phone,
+		Phone:    data.Phone,
 	}
 
 	record := db.Create(&user)

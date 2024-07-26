@@ -1,12 +1,8 @@
 package controller
 
 import (
-	"strings"
-
 	"github.com/gin-gonic/gin"
-	"github.com/tuanchill/lofola-api/configs/common/constants"
 	"github.com/tuanchill/lofola-api/internal/service"
-	"github.com/tuanchill/lofola-api/pkg/helpers"
 	"github.com/tuanchill/lofola-api/pkg/response"
 )
 
@@ -17,7 +13,7 @@ func NewAuthController() *AuthController {
 	return &AuthController{}
 }
 
-// register controller
+// Register controller
 func (a *AuthController) Register(c *gin.Context) error {
 	result := service.NewAuthService().Register(c)
 	if result == nil {
@@ -27,20 +23,14 @@ func (a *AuthController) Register(c *gin.Context) error {
 	return nil
 }
 
-// register controller
+// Login controller
 func (a *AuthController) Login(c *gin.Context) error {
 	result := service.NewAuthService().Login(c)
 	if result == nil {
 		return nil
 	}
 
-	helpers.SetHeaderResponse(c.Writer, constants.AuthorizationHeader, strings.Join([]string{"Bearer", result.Token.AccessToken}, " "))
-	helpers.SetHeaderResponse(c.Writer, constants.RefreshTokenHeader, result.Token.RefreshToken)
-
-	response.Ok(c, "Login successfully", gin.H{
-		"email":    result.Email,
-		"userName": result.UserName,
-	})
+	response.Ok(c, "Login successfully", result)
 	return nil
 }
 
