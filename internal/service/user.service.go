@@ -157,5 +157,12 @@ func (u *UserService) UpdateAvatar(c *gin.Context) *string {
 		return nil
 	}
 
+	go func() {
+		// Resize image
+		if err := helpers.ReSizeImageForAvatar(filePath, filePath); err != nil {
+			logger.LogError(fmt.Sprintf("Cannot resize image: %s", err.Error()))
+		}
+	}()
+
 	return &filePath
 }
