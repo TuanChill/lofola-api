@@ -13,6 +13,6 @@ func UserRouter(r *gin.RouterGroup) {
 		user.Use(middleware.AuthenMiddleware())
 		user.GET("/profile", utils.AsyncHandler(controller.NewUserController().GetProfile))
 		user.POST("/profile", utils.AsyncHandler(controller.NewUserController().UpdateProfile))
-		user.POST("/set-avatar", utils.AsyncHandler(controller.NewUserController().UpdateProfile))
+		user.POST("/set-avatar", utils.AsyncHandler(controller.NewUserController().SetAvatar))
 	}
 }

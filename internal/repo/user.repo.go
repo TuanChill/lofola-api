@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// GetDetailUserByEmail get user by email
 func GetDetailUserByEmail(db *gorm.DB, email string) (models.User, error) {
 	var user models.User
 	record := db.Where("email = ?", email).First(&user)
@@ -18,6 +19,7 @@ func GetDetailUserByEmail(db *gorm.DB, email string) (models.User, error) {
 	return user, nil
 }
 
+// GetDetailUserByUsername get user by username
 func GetDetailUserByUsername(db *gorm.DB, username string) (models.User, error) {
 	var user models.User
 	record := db.Where("user_name = ?", username).First(&user)
@@ -29,6 +31,7 @@ func GetDetailUserByUsername(db *gorm.DB, username string) (models.User, error) 
 	return user, nil
 }
 
+// CreateUser create new user form data
 func CreateUser(db *gorm.DB, data models.UserRequestBody) (models.User, error) {
 	user := models.User{
 		UserName: data.UserName,
@@ -46,9 +49,12 @@ func CreateUser(db *gorm.DB, data models.UserRequestBody) (models.User, error) {
 	return user, nil
 }
 
+// ActiveUser active user by id , change is_active to true
 func ActiveUser(db *gorm.DB, user models.User) error {
 	record := db.Model(&user).Update("is_active", true)
 
+	record.Update("update_at", time.Now())
+
 	if record.Error != nil {
 		return record.Error
 	}
@@ -56,9 +62,12 @@ func ActiveUser(db *gorm.DB, user models.User) error {
 	return nil
 }
 
+// ChangePassword change password of user
 func ChangePassword(db *gorm.DB, user models.User, newPassword string) error {
 	record := db.Model(&user).Update("password", newPassword)
 
+	record.Update("update_at", time.Now())
+
 	if record.Error != nil {
 		return record.Error
 	}
@@ -66,6 +75,7 @@ func ChangePassword(db *gorm.DB, user models.User, newPassword string) error {
 	return nil
 }
 
+// UpdateAvatar update avatar of user
 func UpdateUser(db *gorm.DB, userID int, data *models.UserProfileUpdateRq) error {
 
 	record := db.Model(&models.User{}).Where("id = ?", userID).Updates(map[string]interface{}{
@@ -82,6 +92,8 @@ func UpdateUser(db *gorm.DB, userID int, data *models.UserProfileUpdateRq) error
 
 	return nil
 }
+
+// GetInfoUser get user info by user_id
 func GetInfoUser(db *gorm.DB, userId int) (models.UserInfo, error) {
 	var userRes models.UserInfo
 	record := db.Model(&models.User{}).Where("id = ?", userId).Scan(&userRes)
@@ -91,4 +103,17 @@ func GetInfoUser(db *gorm.DB, userId int) (models.UserInfo, error) {
 	}
 
 	return userRes, nil
+}
+
+// UpdateAvatar update avatar of user from user_id
+func UpdateAvatar(db *gorm.DB, userID int, avatar string) error {
+	record := db.Model(&models.User{}).Where("id = ?", userID).Update("avatar", avatar)
+
+	record.Update("update_at", time.Now())
+
+	if record.Error != nil {
+		return record.Error
+	}
+
+	return nil
 }

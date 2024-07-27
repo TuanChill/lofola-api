@@ -13,7 +13,7 @@ func NewUserController() *UserController {
 	return &UserController{}
 }
 
-// profile update
+// get info profile
 func (u *UserController) GetProfile(c *gin.Context) error {
 	result := service.NewUserService().GetInfoProfile(c)
 	if result == nil {
@@ -23,11 +23,22 @@ func (u *UserController) GetProfile(c *gin.Context) error {
 	return nil
 }
 
+// profile update
 func (u *UserController) UpdateProfile(c *gin.Context) error {
 	result := service.NewUserService().UpdateProfile(c)
 	if result == nil {
 		return nil
 	}
 	response.Ok(c, "Update profile successfully", result)
+	return nil
+}
+
+// update avatar
+func (u *UserController) SetAvatar(c *gin.Context) error {
+	result := service.NewUserService().UpdateAvatar(c)
+	if result == nil {
+		return nil
+	}
+	response.Ok(c, "Update avatar successfully", result)
 	return nil
 }

@@ -17,3 +17,10 @@ const (
 )
 
 const TitleOtpMail = "OTP Verification"
+
+// File Server
+const (
+	MAX_UPLOAD_SIZE  = 5 << 20 // 5MB
+	PathUploadAvatar = "./uploads/avatar"
+	UploadDir        = "/uploads"
+)

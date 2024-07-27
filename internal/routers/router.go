@@ -23,12 +23,17 @@ func NewRouter() *gin.Engine {
 	//init middleware
 	r.Use(middleware.LoggerMiddleware())
 	r.Use(middleware.Cors())
+	r.Use(middleware.LimitUploadFile())
+	r.Use(middleware.RecoveryMiddleware())
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "pong",
 		})
 	})
+
+	// static files
+	StaticFilesRouter(r)
 
 	api := r.Group("/api")
 	{
@@ -38,6 +43,14 @@ func NewRouter() *gin.Engine {
 			UserRouter(v1)
 		}
 	}
+
+	// not found route
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(404, gin.H{
+			"message": "Not found",
+			"status":  "404",
+		})
+	})
 
 	return r
 }
