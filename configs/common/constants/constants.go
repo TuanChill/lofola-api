@@ -1,9 +1,14 @@
 package constants
 
 const (
-	ExpiresAccessToken  = 15 * 60
-	ExpiresRefreshToken = 7 * 24 * 60 * 60
-	ExpiresOTP          = 5 * 60
+	ExpiresAccessToken  = 3 * 60 * 60      // 3 hours
+	ExpiresRefreshToken = 7 * 24 * 60 * 60 // 7 days
+	ExpiresOTP          = 5 * 60           // 5 minutes
+)
+
+const (
+	AuthorizationHeader = "Authorization"
+	RefreshTokenHeader  = "RefreshToken"
 )
 
 const (
@@ -12,3 +17,10 @@ const (
 )
 
 const TitleOtpMail = "OTP Verification"
+
+// File Server
+const (
+	MAX_UPLOAD_SIZE  = 5 << 20 // 5MB
+	PathUploadAvatar = "./uploads/avatar"
+	UploadDir        = "/uploads"
+)

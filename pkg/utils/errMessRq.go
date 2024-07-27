@@ -25,6 +25,10 @@ func getErrorMsg(fe validator.FieldError) string {
 		return "This field must be alphanumeric"
 	case "numeric":
 		return "This field must be numeric"
+	case "len":
+		return "This field must have length " + fe.Param()
+	case "birthday":
+		return "Invalid birthdate format, must be YYYY-MM-DD"
 	}
 
 	return "Unknown error"

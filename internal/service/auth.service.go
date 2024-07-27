@@ -3,6 +3,8 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tuanchill/lofola-api/configs/common/constants"
@@ -46,12 +48,12 @@ func (a *AuthService) Register(c *gin.Context) *models.UserResponseBody {
 	reqBody := models.UserRequestBody{}
 
 	if err := c.ShouldBindJSON(&reqBody); err != nil {
-		response.BadRequestErrorWithFields(c, response.ErrCodeValidation, utils.GetObjMessage(err))
+		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidInput, utils.GetObjMessage(err))
 		return nil
 	}
 
 	// check spam user
-	// if spamResponse := redis.SpamUser(c, global.RDB, constants.SpamKey, constants.RequestThreshold); spamResponse != nil {
+	// if spamResponse := redis.SpamUser(c, global.RDB, reqBody.Email, constants.RequestThreshold); spamResponse != nil {
 	// 	if spamResponse.IsSpam {
 	// 		ttl := fmt.Sprintf("You are blocked for %d seconds", spamResponse.ExpireTime)
 	// 		response.BadRequestError(c, response.ErrIpBlackList, ttl)
@@ -96,8 +98,6 @@ func (a *AuthService) Register(c *gin.Context) *models.UserResponseBody {
 		return nil
 	}
 
-	fmt.Println("hashedPassword", hashedPassword)
-
 	reqBody.Password = hashedPassword
 
 	// create user
@@ -130,19 +130,19 @@ func (a *AuthService) Register(c *gin.Context) *models.UserResponseBody {
 	}
 }
 
-func (a *AuthService) Login(c *gin.Context) *models.LoginResponse {
+func (a *AuthService) Login(c *gin.Context) *models.UserInfo {
 	var reqBody *models.BodyLoginRequest
 
 	// get and validate
 	if err := c.ShouldBindBodyWithJSON(&reqBody); err != nil {
-		response.BadRequestErrorWithFields(c, response.ErrCodeValidation, utils.GetObjMessage(err))
+		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidInput, utils.GetObjMessage(err))
 		return nil
 	}
 
 	//  check identifier is email or username
 	caseIdentifier := helpers.CheckIdentifier(reqBody.Identifier)
 
-	var user models.User // Giả sử User là kiểu dữ liệu của người dùng, thay bằng kiểu dữ liệu thực tế của bạn
+	var user models.User
 	var err error
 
 	switch caseIdentifier {
@@ -175,7 +175,7 @@ func (a *AuthService) Login(c *gin.Context) *models.LoginResponse {
 
 	// check password
 	if err := helpers.ComparePassword(user.Password, reqBody.Password); err != nil {
-		response.BadRequestError(c, response.ErrCodeResourceConflict, "Password is incorrect")
+		response.BadRequestError(c, response.ErrCodeLoginFailed, "Password is incorrect")
 		return nil
 	}
 
@@ -196,14 +196,20 @@ func (a *AuthService) Login(c *gin.Context) *models.LoginResponse {
 		return nil
 	}
 
-	return &models.LoginResponse{
-		ID:       int(user.ID),
-		Email:    user.Email,
+	helpers.SetHeaderResponse(c.Writer, constants.AuthorizationHeader, strings.Join([]string{"Bearer", accessToken}, " "))
+	helpers.SetHeaderResponse(c.Writer, constants.RefreshTokenHeader, refreshToken)
+
+	return &models.UserInfo{
+		ID:       user.ID,
 		UserName: user.UserName,
-		Token: models.TokenStruct{
-			AccessToken:  accessToken,
-			RefreshToken: refreshToken,
-		},
+		Email:    user.Email,
+		Phone:    *user.Phone,
+		FullName: *user.FullName,
+		BirthDay: *user.BirthDay,
+		Avatar:   user.Avatar,
+		Gender:   *user.Gender,
+		CreateAt: user.CreateAt,
+		UpdateAt: *user.UpdateAt,
 	}
 }
 
@@ -212,7 +218,7 @@ func (a *AuthService) Verify(c *gin.Context) bool {
 
 	// get and validate
 	if err := c.ShouldBindBodyWithJSON(&reqBody); err != nil {
-		response.BadRequestErrorWithFields(c, response.ErrCodeValidation, utils.GetObjMessage(err))
+		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidInput, utils.GetObjMessage(err))
 		return false
 	}
 
@@ -246,7 +252,7 @@ func (a *AuthService) Verify(c *gin.Context) bool {
 	}
 
 	// compare otp
-	if otp != fmt.Sprintf("%d", reqBody.Otp) {
+	if otp != reqBody.Otp {
 		response.BadRequestError(c, response.ErrCodeResourceConflict, "OTP is incorrect")
 		return false
 	}
@@ -272,7 +278,7 @@ func (a *AuthService) ResendOtp(c *gin.Context) bool {
 
 	// get and validate
 	if err := c.ShouldBindBodyWithJSON(&reqBody); err != nil {
-		response.BadRequestErrorWithFields(c, response.ErrCodeValidation, utils.GetObjMessage(err))
+		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidInput, utils.GetObjMessage(err))
 		return false
 	}
 
@@ -326,6 +332,145 @@ func (a *AuthService) ResendOtp(c *gin.Context) bool {
 	}
 
 	return true
+}
+
+func (a *AuthService) Logout(c *gin.Context) bool {
+	accToken, refToken := helpers.GetTokenFromHeader(c)
+	if accToken == "" || refToken == "" {
+		response.BadRequestError(c, response.ErrCodeValidation, "Missing authorization header")
+		return false
+	}
+
+	// set token to blacklist
+	var wg sync.WaitGroup
+	wg.Add(2)
+	// save access token to blacklist
+	go func() {
+		defer wg.Done()
+		if err := redis.SaveAccessTokenBlack(c, global.RDB, accToken); err != nil {
+			logger.LogError(fmt.Sprintf("Failed to save access token to blacklist: %v\n", err))
+		}
+	}()
+
+	// save refresh token to blacklist
+	go func() {
+		defer wg.Done()
+		if err := redis.SaveRefreshTokenBlack(c, global.RDB, refToken); err != nil {
+			logger.LogError(fmt.Sprintf("Failed to save refresh token to blacklist: %v\n", err))
+		}
+	}()
+
+	wg.Wait()
+
+	return true
+}
+
+func (a *AuthService) ResetPassword(c *gin.Context) bool {
+	var reqBody *models.ResetPasswordRequest
+
+	// get and validate
+	if err := c.ShouldBindBodyWithJSON(&reqBody); err != nil {
+		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidInput, utils.GetObjMessage(err))
+		return false
+	}
+
+	// check password is the same
+	if reqBody.Password != reqBody.ConfirmPassword {
+		response.BadRequestError(c, response.ErrCodeValidation, "Password and confirm password are not the same")
+		return false
+	}
+
+	// get user by email
+	user, err := repo.GetDetailUserByEmail(global.MDB, reqBody.Email)
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			response.BadRequestError(c, response.ErrCodeResourceConflict, err.Error())
+			return false
+		} else {
+			response.BadRequestError(c, response.ErrCodeResourceConflict, "Email not found")
+			return false
+		}
+	}
+
+	// check otp is correct
+	otp, err := redis.GetOtpKey(c, global.RDB, reqBody.Email)
+	if err != nil {
+		response.BadRequestError(c, response.ErrCodeResourceConflict, err.Error())
+		return false
+	}
+
+	if otp == "" {
+		response.BadRequestError(c, response.ErrCodeResourceConflict, "OTP is expired, please resend OTP")
+		return false
+	}
+
+	if otp != reqBody.Otp {
+		response.BadRequestError(c, response.ErrCodeResourceConflict, "OTP is incorrect")
+		return false
+	}
+
+	// compare new password and old password, it's must be not the same
+	if err := helpers.ComparePassword(user.Password, reqBody.Password); err == nil {
+		response.BadRequestError(c, response.ErrCodeValidation, "The new password must not be the same as the old password")
+		return false
+	}
+
+	// hash password
+	hashedPassword, err := helpers.HashPassword(reqBody.Password)
+	if err != nil {
+		response.InternalServerError(c, response.ErrCodeInternalServer)
+		return false
+	}
+
+	// update password
+	if err := repo.ChangePassword(global.MDB, user, hashedPassword); err != nil {
+		response.InternalServerError(c, response.ErrCodeDBQuery)
+		return false
+	}
+
+	return true
+
+}
+
+func (a *AuthService) RefreshToken(c *gin.Context) error {
+	_, refreshToken := helpers.GetTokenFromHeader(c)
+	if refreshToken == "" {
+		response.BadRequestError(c, response.ErrCodeInvalidRequest, "Refresh Token is required")
+		return nil
+	}
+
+	// check token in black list
+	ok, err := redis.IsTokenBlack(c, global.RDB, utils.FormatKeyRedis(constants.RefreshTokenBlack, refreshToken))
+	if err != nil {
+		response.InternalServerError(c, response.ErrCodeCacheConnection, "Internal Server Error")
+		return nil
+	}
+
+	if ok {
+		response.ForbiddenError(c, response.ErrCodeForbidden, "Forbidden")
+		return nil
+	}
+
+	// validate refresh token
+	data, err := helpers.VerifyToken(refreshToken, global.Config.Security.RefreshTokenSecret.SecretKey)
+	if err != nil {
+		response.ForbiddenError(c, response.ErrCodeAuthTokenInvalid, err.Error())
+		return nil
+	}
+
+	payload := helpers.ExtractToken(data)
+
+	//generate access token
+	accessToken, err := helpers.GenerateAccessToken(payload)
+	if err != nil {
+		response.InternalServerError(c, response.ErrCodeInternalServer, "Fail to generate access token")
+		return nil
+	}
+
+	// set acctoken in header
+	helpers.SetHeaderResponse(c.Writer, constants.AuthorizationHeader, helpers.FormatBearToken(accessToken))
+
+	return nil
 }
 
 func checkOtpAlreadySent(c *gin.Context, email string) error {

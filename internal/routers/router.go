@@ -8,6 +8,7 @@ import (
 )
 
 func NewRouter() *gin.Engine {
+	// set up mode for gin
 	var r *gin.Engine
 	mode := global.Config.Server.Mode
 	if mode == constants.DevMode {
@@ -21,6 +22,9 @@ func NewRouter() *gin.Engine {
 
 	//init middleware
 	r.Use(middleware.LoggerMiddleware())
+	r.Use(middleware.Cors())
+	r.Use(middleware.LimitUploadFile())
+	r.Use(middleware.RecoveryMiddleware())
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -28,13 +32,25 @@ func NewRouter() *gin.Engine {
 		})
 	})
 
+	// static files
+	StaticFilesRouter(r)
+
 	api := r.Group("/api")
 	{
 		v1 := api.Group("/v1")
 		{
 			AuthRouter(v1)
+			UserRouter(v1)
 		}
 	}
+
+	// not found route
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(404, gin.H{
+			"message": "Not found",
+			"status":  "404",
+		})
+	})
 
 	return r
 }

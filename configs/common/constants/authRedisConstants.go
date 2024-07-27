@@ -3,10 +3,12 @@ package constants
 import "time"
 
 const (
-	SpamKey      = "spam_user"
-	SpamKeyLogin = "spam_user_login"
-	SpamKeyOTP   = "spam_user_otp"
-	OTPKey       = "otp_user"
+	SpamKey           = "spam_user"
+	SpamKeyLogin      = "spam_user_login"
+	SpamKeyOTP        = "spam_user_otp"
+	OTPKey            = "otp_user"
+	AccessTokenBlack  = "access_token_black"
+	RefreshTokenBlack = "refresh_token_black"
 )
 
 const (
