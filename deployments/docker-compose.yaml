@@ -1,0 +1,55 @@
+name: lofola
+
+
+services:
+  redis:
+    image: redis:alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    ports:
+      - "6380:6379"
+  mysql:
+    image: mysql:8.0
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -padmin"]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=admin
+      - MYSQL_DATABASE=lofola
+  api:
+    build: 
+      context: ../
+      dockerfile: deployments/Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+    environment:
+      - app=lofola
+      - mode=development
+      - server.port=8080
+      - mysql.host=mysql
+      - mysql.port=3306
+      - mysql.username=root
+      - mysql.password=admin
+      - mysql.database=lofola
+      - mysql.maxIdleConns=10
+      - mysql.maxOpenConns=100
+      - mysql.maxLifetime=3600
+      - redis.host=redis
+      - redis.port=6380
+      - redis.password=
+      - redis.db=0
