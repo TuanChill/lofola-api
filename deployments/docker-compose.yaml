@@ -31,6 +31,11 @@ services:
       dockerfile: deployments/Dockerfile
     ports:
       - "8080:8080"
+    develop:
+      watch:
+        - action: sync
+          path: ../
+          target: /app
     depends_on:
       mysql:
         condition: service_healthy
