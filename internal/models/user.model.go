@@ -101,5 +101,5 @@ type UserProfileUpdateRq struct {
 	Phone    string `json:"phone" binding:"omitempty,len=10"`
 	FullName string `json:"full_name" binding:"omitempty,min=6,max=100"`
 	Gender   bool   `json:"gender" binding:"omitempty"`
-	BirthDay string `json:"birthday" binding:"omitempty,birthday"`
+	BirthDay string `json:"birthday" binding:"omitempty,birthday" time_format:"2006-01-02"`
 }

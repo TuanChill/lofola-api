@@ -19,7 +19,7 @@ func (a *AuthController) Register(c *gin.Context) error {
 	if result == nil {
 		return nil
 	}
-	response.Created(c, "Register successfully", result, nil)
+	response.Created(c, "Register successfully", result)
 	return nil
 }
 
