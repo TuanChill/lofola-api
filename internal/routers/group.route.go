@@ -11,6 +11,7 @@ func GroupRouter(r *gin.RouterGroup) {
 	group := r.Group("/group")
 	{
 		group.GET("/info", utils.AsyncHandler(controller.NewGroupController().GetGroup))
+		group.GET("/search", utils.AsyncHandler(controller.NewGroupController().SearchGroup))
 		private := group.Group("")
 		{
 			private.Use(middleware.AuthenMiddleware())

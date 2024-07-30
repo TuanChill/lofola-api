@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"regexp"
 	"time"
 )
@@ -15,4 +16,11 @@ func IsBirthDayValid(birthDay string) bool {
 	// Parse the date to ensure it is valid
 	_, err := time.Parse("2006-01-02", birthDay)
 	return err == nil
+}
+
+func IsNumberValid(number string) bool {
+	regex := `^\d+$`
+	match, _ := regexp.MatchString(regex, number)
+	fmt.Println(match)
+	return match
 }

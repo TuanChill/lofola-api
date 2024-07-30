@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -94,8 +93,6 @@ func (g *GroupService) UpdateGroup(c *gin.Context) *models.GroupInfo {
 	// owner can update group
 	payload := helpers.GetPayload(c)
 
-	fmt.Println("payload.ID", payload.ID)
-	fmt.Println("group.OwnerID", group.OwnerID)
 	if group.OwnerID != uint(payload.ID) {
 		response.ForbiddenError(c, response.ErrCodeForbidden, "You are not owner of this group")
 		return nil
@@ -188,4 +185,41 @@ func (g *GroupService) GetInfoGroup(c *gin.Context) *models.GroupInfo {
 	}
 
 	return nil
+}
+
+func (g *GroupService) SearchGroup(c *gin.Context) *models.GroupListResponse {
+	var reqParam models.SearchParam
+
+	// keyword := c.Query("keyword")
+
+	if err := helpers.ValidateRequestSearch(c, &reqParam); err != nil {
+		return nil
+	}
+
+	// set default value
+	if reqParam.Limit == 0 {
+		reqParam.Limit = 10
+	}
+
+	if reqParam.Page == 0 {
+		reqParam.Page = 1
+	}
+
+	// search group
+	groups, err := repo.NewGroupRepo().SearchGroup(global.MDB, reqParam)
+	if err != nil {
+		response.InternalServerError(c, response.ErrCodeDBQuery, err.Error())
+		return nil
+	}
+
+	result := models.GroupListResponse{
+		Data: groups.Data,
+		MetaData: models.MetaData{
+			Page:  reqParam.Page,
+			Limit: reqParam.Limit,
+			Total: groups.Total,
+		},
+	}
+
+	return &result
 }

@@ -37,6 +37,12 @@ type GroupInfo struct {
 	UpdateAt    time.Time `json:"update_at"`
 }
 
-type GroupInfoRq struct {
-	ID uint `json:"id" binding:"required,numeric"`
+type GroupListResponse struct {
+	Data     []GroupInfo `json:"data"`
+	MetaData MetaData    `json:"meta_data"`
+}
+
+type GroupSearchResult struct {
+	Data  []GroupInfo `json:"data"`
+	Total int64       `json:"total"`
 }

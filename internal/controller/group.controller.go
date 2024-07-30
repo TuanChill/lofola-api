@@ -40,6 +40,15 @@ func (g *GroupController) CreateGroup(c *gin.Context) error {
 	}
 
 	response.Created(c, "Create Group Successfully", result)
+	return nil
+}
 
+func (g *GroupController) SearchGroup(c *gin.Context) error {
+	result := service.NewGroupService().SearchGroup(c)
+	if result == nil {
+		return nil
+	}
+
+	response.ListDataResponse(c, "Search Group Successfully", result.Data, result.MetaData)
 	return nil
 }

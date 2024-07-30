@@ -64,3 +64,41 @@ func (g *GroupRepo) GetGroup(db *gorm.DB, id uint) (*models.Group, error) {
 
 	return &group, nil
 }
+
+func (g *GroupRepo) SearchGroup(db *gorm.DB, param models.SearchParam) (*models.GroupSearchResult, error) {
+	groups := []models.GroupInfo{}
+	query := db.Model(&models.Group{})
+
+	// not select not public group
+	query = query.Where("is_public = ?", true)
+
+	if param.KeyWord != "" {
+		query = query.Where("name LIKE ?", "%"+param.KeyWord+"%").Where("description LIKE ?", "%"+param.KeyWord+"%")
+	}
+
+	if param.Limit != 0 {
+		query = query.Limit(param.Limit)
+	}
+
+	if param.Page != 0 {
+		query = query.Offset((param.Page - 1) * param.Limit)
+	}
+	query = query.Joins("JOIN users ON `groups`.owner_id = users.id").Select("`groups`.*, users.user_name as owner")
+
+	if err := query.Find(&groups).Error; err != nil {
+		return nil, err
+	}
+
+	// get total group
+	total := int64(0)
+	if err := db.Model(&models.Group{}).Count(&total).Error; err != nil {
+		return nil, err
+	}
+
+	result := models.GroupSearchResult{
+		Data:  groups,
+		Total: total,
+	}
+
+	return &result, nil
+}
