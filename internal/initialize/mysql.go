@@ -53,7 +53,7 @@ func SetPool() {
 }
 
 func migrateTables() {
-	err := global.MDB.AutoMigrate(&models.User{})
+	err := global.MDB.AutoMigrate(&models.User{}, &models.Group{})
 	if err != nil {
 		panic("failed to migrate tables :: " + err.Error())
 	}

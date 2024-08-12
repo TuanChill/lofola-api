@@ -7,15 +7,18 @@ import (
 )
 
 type UserController struct {
+	userService service.IUserService
 }
 
-func NewUserController() *UserController {
-	return &UserController{}
+func NewUserController(userService service.IUserService) *UserController {
+	return &UserController{
+		userService: userService,
+	}
 }
 
 // get info profile
 func (u *UserController) GetProfile(c *gin.Context) error {
-	result := service.NewUserService().GetInfoProfile(c)
+	result := u.userService.GetInfoProfile(c)
 	if result == nil {
 		return nil
 	}
@@ -25,7 +28,7 @@ func (u *UserController) GetProfile(c *gin.Context) error {
 
 // profile update
 func (u *UserController) UpdateProfile(c *gin.Context) error {
-	result := service.NewUserService().UpdateProfile(c)
+	result := u.userService.UpdateProfile(c)
 	if result == nil {
 		return nil
 	}
@@ -35,7 +38,7 @@ func (u *UserController) UpdateProfile(c *gin.Context) error {
 
 // update avatar
 func (u *UserController) SetAvatar(c *gin.Context) error {
-	result := service.NewUserService().UpdateAvatar(c)
+	result := u.userService.UpdateAvatar(c)
 	if result == nil {
 		return nil
 	}

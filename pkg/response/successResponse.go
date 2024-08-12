@@ -48,12 +48,12 @@ func OkWithData(c *gin.Context, message string, data any, metadata any) {
 	response.Send(c)
 }
 
-func Created(c *gin.Context, message string, data any, metadata any) {
+func Created(c *gin.Context, message string, data any) {
 	if message == "" {
 		message = GetReasonPhrase(StatusCreated)
 	}
 
-	response := NewSuccessResponse(message, data, StatusCreated, StatusCreated, metadata, nil)
+	response := NewSuccessResponse(message, data, StatusCreated, StatusCreated, nil, nil)
 
 	response.Send(c)
 }

@@ -7,25 +7,28 @@ import (
 )
 
 type AuthController struct {
+	authService service.IAuthService
 }
 
-func NewAuthController() *AuthController {
-	return &AuthController{}
+func NewAuthController(authServer service.IAuthService) *AuthController {
+	return &AuthController{
+		authService: authServer,
+	}
 }
 
 // Register controller
 func (a *AuthController) Register(c *gin.Context) error {
-	result := service.NewAuthService().Register(c)
+	result := a.authService.Register(c)
 	if result == nil {
 		return nil
 	}
-	response.Created(c, "Register successfully", result, nil)
+	response.Created(c, "Register successfully", result)
 	return nil
 }
 
 // Login controller
 func (a *AuthController) Login(c *gin.Context) error {
-	result := service.NewAuthService().Login(c)
+	result := a.authService.Login(c)
 	if result == nil {
 		return nil
 	}
@@ -35,7 +38,7 @@ func (a *AuthController) Login(c *gin.Context) error {
 }
 
 func (a *AuthController) VerifyOtp(c *gin.Context) error {
-	result := service.NewAuthService().Verify(c)
+	result := a.authService.Verify(c)
 	if !result {
 		return nil
 	}
@@ -44,7 +47,7 @@ func (a *AuthController) VerifyOtp(c *gin.Context) error {
 }
 
 func (a *AuthController) ResendOtp(c *gin.Context) error {
-	result := service.NewAuthService().ResendOtp(c)
+	result := a.authService.ResendOtp(c)
 	if !result {
 		return nil
 	}
@@ -53,7 +56,7 @@ func (a *AuthController) ResendOtp(c *gin.Context) error {
 }
 
 func (a *AuthController) Logout(c *gin.Context) error {
-	result := service.NewAuthService().Logout(c)
+	result := a.authService.Logout(c)
 	if !result {
 		return nil
 	}
@@ -62,7 +65,7 @@ func (a *AuthController) Logout(c *gin.Context) error {
 }
 
 func (a *AuthController) ResetPassword(c *gin.Context) error {
-	result := service.NewAuthService().ResetPassword(c)
+	result := a.authService.ResetPassword(c)
 	if !result {
 		return nil
 	}
@@ -71,7 +74,7 @@ func (a *AuthController) ResetPassword(c *gin.Context) error {
 }
 
 func (a *AuthController) RefreshToken(c *gin.Context) error {
-	result := service.NewAuthService().RefreshToken(c)
+	result := a.authService.RefreshToken(c)
 	if result == nil {
 		return nil
 	}

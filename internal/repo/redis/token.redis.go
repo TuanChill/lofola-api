@@ -9,7 +9,21 @@ import (
 	"github.com/tuanchill/lofola-api/pkg/utils"
 )
 
-func saveTokenBlack(ctx *gin.Context, r *redis.Client, key string, expireTime int) error {
+type ITokenRedisRepo interface {
+	saveTokenBlack(ctx *gin.Context, r *redis.Client, key string, expireTime int) error
+	SaveAccessTokenBlack(ctx *gin.Context, r *redis.Client, token string) error
+	SaveRefreshTokenBlack(ctx *gin.Context, r *redis.Client, token string) error
+	IsTokenBlack(ctx *gin.Context, r *redis.Client, key string) (bool, error)
+}
+
+type tokenRedisRepo struct {
+}
+
+func NewTokenRedisRepo() ITokenRedisRepo {
+	return &tokenRedisRepo{}
+}
+
+func (t *tokenRedisRepo) saveTokenBlack(ctx *gin.Context, r *redis.Client, key string, expireTime int) error {
 	err := r.Set(ctx, key, "blacklisted", time.Duration(time.Duration(expireTime).Seconds())).Err()
 
 	if err != nil {
@@ -19,19 +33,19 @@ func saveTokenBlack(ctx *gin.Context, r *redis.Client, key string, expireTime in
 	return nil
 }
 
-func SaveAccessTokenBlack(ctx *gin.Context, r *redis.Client, token string) error {
+func (t *tokenRedisRepo) SaveAccessTokenBlack(ctx *gin.Context, r *redis.Client, token string) error {
 	key := utils.FormatKeyRedis(constants.AccessTokenBlack, token)
 
-	return saveTokenBlack(ctx, r, key, constants.ExpiresAccessToken)
+	return t.saveTokenBlack(ctx, r, key, constants.ExpiresAccessToken)
 }
 
-func SaveRefreshTokenBlack(ctx *gin.Context, r *redis.Client, token string) error {
+func (t *tokenRedisRepo) SaveRefreshTokenBlack(ctx *gin.Context, r *redis.Client, token string) error {
 	key := utils.FormatKeyRedis(constants.RefreshTokenBlack, token)
 
-	return saveTokenBlack(ctx, r, key, constants.ExpiresRefreshToken)
+	return t.saveTokenBlack(ctx, r, key, constants.ExpiresRefreshToken)
 }
 
-func IsTokenBlack(ctx *gin.Context, r *redis.Client, key string) (bool, error) {
+func (t *tokenRedisRepo) IsTokenBlack(ctx *gin.Context, r *redis.Client, key string) (bool, error) {
 	_, err := r.Get(ctx, key).Result()
 
 	if err == redis.Nil {
