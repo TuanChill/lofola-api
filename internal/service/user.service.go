@@ -19,19 +19,28 @@ import (
 	"github.com/tuanchill/lofola-api/pkg/utils"
 )
 
-type UserService struct {
+type IUserService interface {
+	GetInfoProfile(c *gin.Context) *models.UserInfo
+	UpdateProfile(c *gin.Context) *models.UserInfo
+	UpdateAvatar(c *gin.Context) *string
 }
 
-func NewUserService() *UserService {
-	return &UserService{}
+type userService struct {
+	userRepo repo.IUserRepo
 }
 
-func (u *UserService) GetInfoProfile(c *gin.Context) *models.UserInfo {
+func NewUserService(userRepo repo.IUserRepo) IUserService {
+	return &userService{
+		userRepo: userRepo,
+	}
+}
+
+func (u *userService) GetInfoProfile(c *gin.Context) *models.UserInfo {
 	// Get user_id info from token
 	payload := helpers.GetPayload(c)
 
 	// Get user info from user_id
-	user, err := repo.GetInfoUser(global.MDB, payload.ID)
+	user, err := u.userRepo.GetInfoUser(global.MDB, payload.ID)
 	if err != nil {
 		response.InternalServerError(c, response.ErrCodeDBConnection, "Internal server error")
 		return nil
@@ -51,7 +60,7 @@ func (u *UserService) GetInfoProfile(c *gin.Context) *models.UserInfo {
 	}
 }
 
-func (u *UserService) UpdateProfile(c *gin.Context) *models.UserInfo {
+func (u *userService) UpdateProfile(c *gin.Context) *models.UserInfo {
 	// Get data from request and validate
 	var data *models.UserProfileUpdateRq
 
@@ -73,13 +82,13 @@ func (u *UserService) UpdateProfile(c *gin.Context) *models.UserInfo {
 	payload := helpers.GetPayload(c)
 
 	// update user info
-	if err := repo.UpdateUser(global.MDB, payload.ID, data); err != nil {
+	if err := u.userRepo.UpdateUser(global.MDB, payload.ID, data); err != nil {
 		response.InternalServerError(c, response.ErrCodeDBConnection, err.Error())
 		return nil
 	}
 
 	// Get user info from user_id
-	user, err := repo.GetInfoUser(global.MDB, payload.ID)
+	user, err := u.userRepo.GetInfoUser(global.MDB, payload.ID)
 	if err != nil {
 		response.InternalServerError(c, response.ErrCodeDBConnection, err.Error())
 		return nil
@@ -88,7 +97,7 @@ func (u *UserService) UpdateProfile(c *gin.Context) *models.UserInfo {
 	return &user
 }
 
-func (u *UserService) UpdateAvatar(c *gin.Context) *string {
+func (u *userService) UpdateAvatar(c *gin.Context) *string {
 	// The argument to FormFile must match the name attribute
 	// of the file input on the frontend
 	file, fileHeader, err := c.Request.FormFile("avatar")
@@ -151,7 +160,7 @@ func (u *UserService) UpdateAvatar(c *gin.Context) *string {
 	payload := helpers.GetPayload(c)
 
 	// update user avatar
-	if err := repo.UpdateAvatar(global.MDB, payload.ID, filePath); err != nil {
+	if err := u.userRepo.UpdateAvatar(global.MDB, payload.ID, filePath); err != nil {
 		logger.LogError(fmt.Sprintf("Cannot update avatar: %s", err.Error()))
 		response.InternalServerError(c, response.ErrCodeDBConnection, err.Error())
 		return nil

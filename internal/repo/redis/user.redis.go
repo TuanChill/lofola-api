@@ -10,7 +10,18 @@ import (
 	"github.com/tuanchill/lofola-api/internal/models"
 )
 
-func SpamUser(ctx *gin.Context, rdb *redis.Client, email string, requestThreshold int64) *models.SpamUserRedisResponse {
+type IUserRedisRepo interface {
+	SpamUser(ctx *gin.Context, rdb *redis.Client, email string, requestThreshold int64) *models.SpamUserRedisResponse
+}
+
+type userRedisRepo struct {
+}
+
+func NewUserRedisRepo() IUserRedisRepo {
+	return &userRedisRepo{}
+}
+
+func (u *userRedisRepo) SpamUser(ctx *gin.Context, rdb *redis.Client, email string, requestThreshold int64) *models.SpamUserRedisResponse {
 	key := fmt.Sprintf("%s_%s", constants.SpamKey, email)
 
 	numberRequest, err := rdb.Incr(ctx, key).Result()

@@ -22,7 +22,7 @@ func NewRouter() *gin.Engine {
 
 	//init middleware
 	r.Use(middleware.LoggerMiddleware())
-	r.Use(middleware.Cors())
+	// r.Use(middleware.Cors())
 	r.Use(middleware.LimitUploadFile())
 	r.Use(middleware.RecoveryMiddleware())
 

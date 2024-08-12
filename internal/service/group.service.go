@@ -13,14 +13,28 @@ import (
 	"gorm.io/gorm"
 )
 
-type GroupService struct {
+type IGroupService interface {
+	GetGroup(c *gin.Context) *models.GroupInfo
+	UpdateGroup(c *gin.Context) *models.GroupInfo
+	CreateGroup(c *gin.Context) *models.GroupInfo
+	GetInfoGroup(c *gin.Context) *models.GroupInfo
+	SearchGroup(c *gin.Context) *models.GroupListResponse
+	JoinGroup(c *gin.Context) *models.GroupInfo
 }
 
-func NewGroupService() *GroupService {
-	return &GroupService{}
+type groupService struct {
+	groupRepo repo.IGroupRepo
+	userRepo  repo.IUserRepo
 }
 
-func (g *GroupService) GetGroup(c *gin.Context) *models.GroupInfo {
+func NewGroupService(groupRepo repo.IGroupRepo, userRepo repo.IUserRepo) IGroupService {
+	return &groupService{
+		groupRepo: groupRepo,
+		userRepo:  userRepo,
+	}
+}
+
+func (g *groupService) GetGroup(c *gin.Context) *models.GroupInfo {
 	groupId := c.Query("id")
 	if groupId == "" {
 		response.BadRequestError(c, response.ErrCodeInvalidRequest, "ID is required")
@@ -34,7 +48,7 @@ func (g *GroupService) GetGroup(c *gin.Context) *models.GroupInfo {
 		return nil
 	}
 
-	group, err := repo.NewGroupRepo().GetGroup(global.MDB, uint(groupID))
+	group, err := g.groupRepo.GetGroup(global.MDB, uint(groupID))
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			response.NotFoundError(c, response.ErrCodeNotFound, "Group not found")
@@ -52,7 +66,7 @@ func (g *GroupService) GetGroup(c *gin.Context) *models.GroupInfo {
 	}
 
 	// get owner info
-	owner, err := repo.GetInfoUser(global.MDB, int(group.OwnerID))
+	owner, err := g.userRepo.GetInfoUser(global.MDB, int(group.OwnerID))
 	if err != nil {
 		response.InternalServerError(c, response.ErrCodeDBQuery, err.Error())
 		return nil
@@ -70,7 +84,7 @@ func (g *GroupService) GetGroup(c *gin.Context) *models.GroupInfo {
 }
 
 // UpdateGroup is a function that update a group
-func (g *GroupService) UpdateGroup(c *gin.Context) *models.GroupInfo {
+func (g *groupService) UpdateGroup(c *gin.Context) *models.GroupInfo {
 	var reqBody models.GroupUpdateRequest
 
 	if err := c.ShouldBindBodyWithJSON(&reqBody); err != nil {
@@ -84,7 +98,7 @@ func (g *GroupService) UpdateGroup(c *gin.Context) *models.GroupInfo {
 	}
 
 	// check group exist
-	group, err := repo.NewGroupRepo().GetGroup(global.MDB, reqBody.ID)
+	group, err := g.groupRepo.GetGroup(global.MDB, reqBody.ID)
 	if err != nil {
 		response.InternalServerError(c, response.ErrCodeDBQuery, err.Error())
 		return nil
@@ -99,7 +113,7 @@ func (g *GroupService) UpdateGroup(c *gin.Context) *models.GroupInfo {
 	}
 
 	// check owner is set in request exist
-	user, err := repo.GetInfoUser(global.MDB, int(reqBody.OwnerID))
+	user, err := g.userRepo.GetInfoUser(global.MDB, int(reqBody.OwnerID))
 	if err != nil {
 		response.BadRequestError(c, response.ErrCodeInvalidInput, err.Error())
 		return nil
@@ -111,7 +125,7 @@ func (g *GroupService) UpdateGroup(c *gin.Context) *models.GroupInfo {
 	}
 
 	// update group
-	group, err = repo.NewGroupRepo().UpdateGroup(global.MDB, models.Group{
+	group, err = g.groupRepo.UpdateGroup(global.MDB, models.Group{
 		ID:          reqBody.ID,
 		Name:        reqBody.Name,
 		Description: reqBody.Description,
@@ -135,7 +149,7 @@ func (g *GroupService) UpdateGroup(c *gin.Context) *models.GroupInfo {
 }
 
 // CreateGroup is a function that create and  returns a group
-func (g *GroupService) CreateGroup(c *gin.Context) *models.GroupInfo {
+func (g *groupService) CreateGroup(c *gin.Context) *models.GroupInfo {
 	var reqBody models.GroupCreateRequest
 
 	if err := c.ShouldBindBodyWithJSON(&reqBody); err != nil {
@@ -152,7 +166,7 @@ func (g *GroupService) CreateGroup(c *gin.Context) *models.GroupInfo {
 	payload := helpers.GetPayload(c)
 
 	// create group
-	group, err := repo.NewGroupRepo().CreateGroup(global.MDB, models.Group{
+	group, err := g.groupRepo.CreateGroup(global.MDB, models.Group{
 		Name:        reqBody.Name,
 		Description: reqBody.Description,
 		IsPublic:    reqBody.IsPublic,
@@ -177,7 +191,7 @@ func (g *GroupService) CreateGroup(c *gin.Context) *models.GroupInfo {
 	return &groupInfo
 }
 
-func (g *GroupService) GetInfoGroup(c *gin.Context) *models.GroupInfo {
+func (g *groupService) GetInfoGroup(c *gin.Context) *models.GroupInfo {
 	groupId := c.Query("id")
 	if groupId == "" {
 		response.BadRequestError(c, response.ErrCodeInvalidRequest, "Group ID is required")
@@ -187,7 +201,7 @@ func (g *GroupService) GetInfoGroup(c *gin.Context) *models.GroupInfo {
 	return nil
 }
 
-func (g *GroupService) SearchGroup(c *gin.Context) *models.GroupListResponse {
+func (g *groupService) SearchGroup(c *gin.Context) *models.GroupListResponse {
 	var reqParam models.SearchParam
 
 	// keyword := c.Query("keyword")
@@ -206,7 +220,7 @@ func (g *GroupService) SearchGroup(c *gin.Context) *models.GroupListResponse {
 	}
 
 	// search group
-	groups, err := repo.NewGroupRepo().SearchGroup(global.MDB, reqParam)
+	groups, err := g.groupRepo.SearchGroup(global.MDB, reqParam)
 	if err != nil {
 		response.InternalServerError(c, response.ErrCodeDBQuery, err.Error())
 		return nil
@@ -222,4 +236,22 @@ func (g *GroupService) SearchGroup(c *gin.Context) *models.GroupListResponse {
 	}
 
 	return &result
+}
+
+// JoinGroup is a function that join a group service
+func (g *groupService) JoinGroup(c *gin.Context) *models.GroupInfo {
+	var reqBody models.GroupJoinRequest
+	if err := c.ShouldBindBodyWithJSON(&reqBody); err != nil {
+		if err.Error() == "EOF" {
+			response.BadRequestError(c, response.ErrCodeInvalidRequest, "No data provided")
+			return nil
+		}
+
+		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidRequest, utils.GetObjMessage(err))
+		return nil
+	}
+
+	// get user_id from token
+
+	return nil
 }

@@ -5,17 +5,24 @@ import (
 	"gorm.io/gorm"
 )
 
+type IGroupRepo interface {
+	CreateGroup(db *gorm.DB, data models.Group) (*models.Group, error)
+	UpdateGroup(db *gorm.DB, data models.Group) (*models.Group, error)
+	GetGroup(db *gorm.DB, id uint) (*models.Group, error)
+	SearchGroup(db *gorm.DB, param models.SearchParam) (*models.GroupSearchResult, error)
+}
+
 // GroupRepo is a struct that defines the group repository
-type GroupRepo struct {
+type groupRepo struct {
 }
 
 // NewGroupRepo is a function that returns a new group repository
-func NewGroupRepo() *GroupRepo {
-	return &GroupRepo{}
+func NewGroupRepo() IGroupRepo {
+	return &groupRepo{}
 }
 
 // CreateGroup is a function that returns a group
-func (g *GroupRepo) CreateGroup(db *gorm.DB, data models.Group) (*models.Group, error) {
+func (g *groupRepo) CreateGroup(db *gorm.DB, data models.Group) (*models.Group, error) {
 	group := models.Group{
 		Name:        data.Name,
 		Description: data.Description,
@@ -37,7 +44,7 @@ func (g *GroupRepo) CreateGroup(db *gorm.DB, data models.Group) (*models.Group, 
 }
 
 // UpdateGroup is a function that returns a group
-func (g *GroupRepo) UpdateGroup(db *gorm.DB, data models.Group) (*models.Group, error) {
+func (g *groupRepo) UpdateGroup(db *gorm.DB, data models.Group) (*models.Group, error) {
 	group := models.Group{
 		Name:        data.Name,
 		Description: data.Description,
@@ -54,7 +61,7 @@ func (g *GroupRepo) UpdateGroup(db *gorm.DB, data models.Group) (*models.Group, 
 }
 
 // GetGroup is a function that returns a group
-func (g *GroupRepo) GetGroup(db *gorm.DB, id uint) (*models.Group, error) {
+func (g *groupRepo) GetGroup(db *gorm.DB, id uint) (*models.Group, error) {
 	group := models.Group{}
 	record := db.First(&group, id)
 
@@ -65,7 +72,7 @@ func (g *GroupRepo) GetGroup(db *gorm.DB, id uint) (*models.Group, error) {
 	return &group, nil
 }
 
-func (g *GroupRepo) SearchGroup(db *gorm.DB, param models.SearchParam) (*models.GroupSearchResult, error) {
+func (g *groupRepo) SearchGroup(db *gorm.DB, param models.SearchParam) (*models.GroupSearchResult, error) {
 	groups := []models.GroupInfo{}
 	query := db.Model(&models.Group{})
 

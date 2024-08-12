@@ -20,10 +20,29 @@ import (
 	"gorm.io/gorm"
 )
 
-type AuthService struct{}
+type IAuthService interface {
+	Register(c *gin.Context) *models.UserResponseBody
+	Login(c *gin.Context) *models.UserInfo
+	Verify(c *gin.Context) bool
+	ResendOtp(c *gin.Context) bool
+	Logout(c *gin.Context) bool
+	ResetPassword(c *gin.Context) bool
+	RefreshToken(c *gin.Context) error
+	checkOtpAlreadySent(c *gin.Context, email string) error
+}
 
-func NewAuthService() *AuthService {
-	return &AuthService{}
+type authService struct {
+	userRepo       repo.IUserRepo
+	otpRepo        redis.IOtpRedisRepo
+	tokenRedisRepo redis.ITokenRedisRepo
+}
+
+func NewAuthService(userRepo repo.IUserRepo, otpRepo redis.IOtpRedisRepo, tokenRedisRepo redis.ITokenRedisRepo) IAuthService {
+	return &authService{
+		userRepo:       userRepo,
+		otpRepo:        otpRepo,
+		tokenRedisRepo: tokenRedisRepo,
+	}
 }
 
 // Register handles the registration process for a user.
@@ -43,7 +62,7 @@ func NewAuthService() *AuthService {
 // @Failure 400 {object} response.ErrorResponse
 // @Failure 500 {object} response.ErrorResponse
 // @Router /auth/register [post]
-func (a *AuthService) Register(c *gin.Context) *models.UserResponseBody {
+func (a *authService) Register(c *gin.Context) *models.UserResponseBody {
 	// get data from body
 	reqBody := models.UserRequestBody{}
 
@@ -62,7 +81,7 @@ func (a *AuthService) Register(c *gin.Context) *models.UserResponseBody {
 	// }
 
 	// get user by email
-	user, err := repo.GetDetailUserByEmail(global.MDB, reqBody.Email)
+	user, err := a.userRepo.GetDetailUserByEmail(global.MDB, reqBody.Email)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			response.BadRequestError(c, response.ErrCodeResourceConflict, err.Error())
@@ -77,7 +96,7 @@ func (a *AuthService) Register(c *gin.Context) *models.UserResponseBody {
 	}
 
 	// get user by username
-	oldUser, err := repo.GetDetailUserByUsername(global.MDB, reqBody.UserName)
+	oldUser, err := a.userRepo.GetDetailUserByUsername(global.MDB, reqBody.UserName)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			response.BadRequestError(c, response.ErrCodeResourceConflict, err.Error())
@@ -101,7 +120,7 @@ func (a *AuthService) Register(c *gin.Context) *models.UserResponseBody {
 	reqBody.Password = hashedPassword
 
 	// create user
-	newUser, err := repo.CreateUser(global.MDB, reqBody)
+	newUser, err := a.userRepo.CreateUser(global.MDB, reqBody)
 	if err != nil {
 		response.InternalServerError(c, response.ErrCodeDBQuery)
 		return nil
@@ -130,7 +149,7 @@ func (a *AuthService) Register(c *gin.Context) *models.UserResponseBody {
 	}
 }
 
-func (a *AuthService) Login(c *gin.Context) *models.UserInfo {
+func (a *authService) Login(c *gin.Context) *models.UserInfo {
 	var reqBody *models.BodyLoginRequest
 
 	// get and validate
@@ -148,7 +167,7 @@ func (a *AuthService) Login(c *gin.Context) *models.UserInfo {
 	switch caseIdentifier {
 	case "email":
 		// get user by email
-		user, err = repo.GetDetailUserByEmail(global.MDB, reqBody.Identifier)
+		user, err = a.userRepo.GetDetailUserByEmail(global.MDB, reqBody.Identifier)
 		if err != nil {
 			if !errors.Is(err, gorm.ErrRecordNotFound) {
 				response.BadRequestError(c, response.ErrCodeResourceConflict, err.Error())
@@ -157,7 +176,7 @@ func (a *AuthService) Login(c *gin.Context) *models.UserInfo {
 		}
 	case "username":
 		// get user by username
-		user, err = repo.GetDetailUserByUsername(global.MDB, reqBody.Identifier)
+		user, err = a.userRepo.GetDetailUserByUsername(global.MDB, reqBody.Identifier)
 		if err != nil {
 			if !errors.Is(err, gorm.ErrRecordNotFound) {
 				response.BadRequestError(c, response.ErrCodeResourceConflict, err.Error())
@@ -213,7 +232,7 @@ func (a *AuthService) Login(c *gin.Context) *models.UserInfo {
 	}
 }
 
-func (a *AuthService) Verify(c *gin.Context) bool {
+func (a *authService) Verify(c *gin.Context) bool {
 	var reqBody *models.UserVerifyOtp
 
 	// get and validate
@@ -223,7 +242,7 @@ func (a *AuthService) Verify(c *gin.Context) bool {
 	}
 
 	//  check user exists
-	user, err := repo.GetDetailUserByEmail(global.MDB, reqBody.Email)
+	user, err := a.userRepo.GetDetailUserByEmail(global.MDB, reqBody.Email)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			response.BadRequestError(c, response.ErrCodeResourceConflict, err.Error())
@@ -241,7 +260,7 @@ func (a *AuthService) Verify(c *gin.Context) bool {
 	}
 
 	// check otp
-	otp, err := redis.GetOtpKey(c, global.RDB, reqBody.Email)
+	otp, err := a.otpRepo.GetOtpKey(c, global.RDB, reqBody.Email)
 	if err != nil {
 		response.BadRequestError(c, response.ErrCodeResourceConflict, err.Error())
 		return false
@@ -257,7 +276,7 @@ func (a *AuthService) Verify(c *gin.Context) bool {
 		return false
 	}
 
-	if err := repo.ActiveUser(global.MDB, user); err != nil {
+	if err := a.userRepo.ActiveUser(global.MDB, user); err != nil {
 		logger.LogError(fmt.Sprintf("Failed to active user %s: %v\n", user.Email, err))
 		response.InternalServerError(c, response.ErrCodeInternalServer, "Failed to active user")
 		return false
@@ -265,7 +284,7 @@ func (a *AuthService) Verify(c *gin.Context) bool {
 
 	// clear otp of this email from cache
 	go func() {
-		if err := redis.DeleteOtpKey(c, global.RDB, reqBody.Email); err != nil {
+		if err := a.otpRepo.DeleteOtpKey(c, global.RDB, reqBody.Email); err != nil {
 			logger.LogError(fmt.Sprintf("Failed to delete OTP of user %s: %v\n", user.Email, err))
 		}
 	}()
@@ -273,7 +292,7 @@ func (a *AuthService) Verify(c *gin.Context) bool {
 	return true
 }
 
-func (a *AuthService) ResendOtp(c *gin.Context) bool {
+func (a *authService) ResendOtp(c *gin.Context) bool {
 	var reqBody *models.UserResendOtp
 
 	// get and validate
@@ -283,7 +302,7 @@ func (a *AuthService) ResendOtp(c *gin.Context) bool {
 	}
 
 	// get user by email
-	user, err := repo.GetDetailUserByEmail(global.MDB, reqBody.Email)
+	user, err := a.userRepo.GetDetailUserByEmail(global.MDB, reqBody.Email)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			response.BadRequestError(c, response.ErrCodeDBConnection, err.Error())
@@ -301,7 +320,7 @@ func (a *AuthService) ResendOtp(c *gin.Context) bool {
 	}
 
 	// check otp already sent
-	if err := checkOtpAlreadySent(c, reqBody.Email); err != nil {
+	if err := a.checkOtpAlreadySent(c, reqBody.Email); err != nil {
 		response.BadRequestError(c, response.ErrCodeResourceConflict, err.Error())
 		return false
 	}
@@ -319,7 +338,7 @@ func (a *AuthService) ResendOtp(c *gin.Context) bool {
 	}
 
 	// save otp to cache
-	if err := redis.SaveOtpKey(c, global.RDB, reqBody.Email, otp); err != nil {
+	if err := a.otpRepo.SaveOtpKey(c, global.RDB, reqBody.Email, otp); err != nil {
 		response.InternalServerError(c, response.ErrCodeInternalServer, "Failed to save OTP")
 		return false
 	}
@@ -327,14 +346,14 @@ func (a *AuthService) ResendOtp(c *gin.Context) bool {
 	if err := mailer.SendOptMail(otpMailData); err != nil {
 		response.InternalServerError(c, response.ErrCodeInternalServer, "Failed to send email verification")
 		// clear otp of this email from cache if send error
-		redis.DeleteOtpKey(c, global.RDB, reqBody.Email)
+		a.otpRepo.DeleteOtpKey(c, global.RDB, reqBody.Email)
 		return false
 	}
 
 	return true
 }
 
-func (a *AuthService) Logout(c *gin.Context) bool {
+func (a *authService) Logout(c *gin.Context) bool {
 	accToken, refToken := helpers.GetTokenFromHeader(c)
 	if accToken == "" || refToken == "" {
 		response.BadRequestError(c, response.ErrCodeValidation, "Missing authorization header")
@@ -347,7 +366,7 @@ func (a *AuthService) Logout(c *gin.Context) bool {
 	// save access token to blacklist
 	go func() {
 		defer wg.Done()
-		if err := redis.SaveAccessTokenBlack(c, global.RDB, accToken); err != nil {
+		if err := a.tokenRedisRepo.SaveAccessTokenBlack(c, global.RDB, accToken); err != nil {
 			logger.LogError(fmt.Sprintf("Failed to save access token to blacklist: %v\n", err))
 		}
 	}()
@@ -355,7 +374,7 @@ func (a *AuthService) Logout(c *gin.Context) bool {
 	// save refresh token to blacklist
 	go func() {
 		defer wg.Done()
-		if err := redis.SaveRefreshTokenBlack(c, global.RDB, refToken); err != nil {
+		if err := a.tokenRedisRepo.SaveRefreshTokenBlack(c, global.RDB, refToken); err != nil {
 			logger.LogError(fmt.Sprintf("Failed to save refresh token to blacklist: %v\n", err))
 		}
 	}()
@@ -365,7 +384,7 @@ func (a *AuthService) Logout(c *gin.Context) bool {
 	return true
 }
 
-func (a *AuthService) ResetPassword(c *gin.Context) bool {
+func (a *authService) ResetPassword(c *gin.Context) bool {
 	var reqBody *models.ResetPasswordRequest
 
 	// get and validate
@@ -381,7 +400,7 @@ func (a *AuthService) ResetPassword(c *gin.Context) bool {
 	}
 
 	// get user by email
-	user, err := repo.GetDetailUserByEmail(global.MDB, reqBody.Email)
+	user, err := a.userRepo.GetDetailUserByEmail(global.MDB, reqBody.Email)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			response.BadRequestError(c, response.ErrCodeResourceConflict, err.Error())
@@ -393,7 +412,7 @@ func (a *AuthService) ResetPassword(c *gin.Context) bool {
 	}
 
 	// check otp is correct
-	otp, err := redis.GetOtpKey(c, global.RDB, reqBody.Email)
+	otp, err := a.otpRepo.GetOtpKey(c, global.RDB, reqBody.Email)
 	if err != nil {
 		response.BadRequestError(c, response.ErrCodeResourceConflict, err.Error())
 		return false
@@ -423,7 +442,7 @@ func (a *AuthService) ResetPassword(c *gin.Context) bool {
 	}
 
 	// update password
-	if err := repo.ChangePassword(global.MDB, user, hashedPassword); err != nil {
+	if err := a.userRepo.ChangePassword(global.MDB, user, hashedPassword); err != nil {
 		response.InternalServerError(c, response.ErrCodeDBQuery)
 		return false
 	}
@@ -432,7 +451,7 @@ func (a *AuthService) ResetPassword(c *gin.Context) bool {
 
 }
 
-func (a *AuthService) RefreshToken(c *gin.Context) error {
+func (a *authService) RefreshToken(c *gin.Context) error {
 	_, refreshToken := helpers.GetTokenFromHeader(c)
 	if refreshToken == "" {
 		response.BadRequestError(c, response.ErrCodeInvalidRequest, "Refresh Token is required")
@@ -440,7 +459,7 @@ func (a *AuthService) RefreshToken(c *gin.Context) error {
 	}
 
 	// check token in black list
-	ok, err := redis.IsTokenBlack(c, global.RDB, utils.FormatKeyRedis(constants.RefreshTokenBlack, refreshToken))
+	ok, err := a.tokenRedisRepo.IsTokenBlack(c, global.RDB, utils.FormatKeyRedis(constants.RefreshTokenBlack, refreshToken))
 	if err != nil {
 		response.InternalServerError(c, response.ErrCodeCacheConnection, "Internal Server Error")
 		return nil
@@ -473,8 +492,8 @@ func (a *AuthService) RefreshToken(c *gin.Context) error {
 	return nil
 }
 
-func checkOtpAlreadySent(c *gin.Context, email string) error {
-	otp, err := redis.GetOtpKey(c, global.RDB, email)
+func (a *authService) checkOtpAlreadySent(c *gin.Context, email string) error {
+	otp, err := a.otpRepo.GetOtpKey(c, global.RDB, email)
 	if err != nil {
 		return err
 	}
