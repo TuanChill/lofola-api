@@ -1,6 +1,9 @@
 serve:  
 	go run ./cmd/server/main.go
 
+build:
+	go build -o bin/lofola ./cmd/server/main.go
+
 build_docker:
 	docker build -f deployments/Dockerfile -t lofola:0.0.1 .
 
