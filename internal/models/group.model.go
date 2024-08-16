@@ -12,11 +12,11 @@ type Group struct {
 	UpdateAt    time.Time `json:"update_at" gorm:"default:CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()"`
 }
 
-// GroupUser is a struct that defines the relationship between group and user
+// GroupUser is a struct that defines the group contains user
 type GroupUser struct {
-	ID     uint `json:"id" gorm:"primaryKey"`
-	Group  Group
-	UserID uint `json:"user_id" gorm:"not null"`
+	ID      uint `json:"id" gorm:"primaryKey"`
+	GroupID uint `json:"group_id" gorm:"not null"`
+	UserID  uint `json:"user_id" gorm:"not null"`
 }
 
 // GroupUserRequest is a struct that defines the request body for adding user to group
@@ -55,5 +55,9 @@ type GroupSearchResult struct {
 }
 
 type GroupJoinRequest struct {
+	GroupID uint `json:"group_id" binding:"required,numeric"`
+}
+
+type GroupLeaveRequest struct {
 	GroupID uint `json:"group_id" binding:"required,numeric"`
 }

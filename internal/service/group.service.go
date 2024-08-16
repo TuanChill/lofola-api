@@ -19,7 +19,8 @@ type IGroupService interface {
 	CreateGroup(c *gin.Context) *models.GroupInfo
 	GetInfoGroup(c *gin.Context) *models.GroupInfo
 	SearchGroup(c *gin.Context) *models.GroupListResponse
-	JoinGroup(c *gin.Context) *models.GroupInfo
+	JoinGroup(c *gin.Context) bool
+	LeaveGroup(c *gin.Context) bool
 }
 
 type groupService struct {
@@ -239,19 +240,87 @@ func (g *groupService) SearchGroup(c *gin.Context) *models.GroupListResponse {
 }
 
 // JoinGroup is a function that join a group service
-func (g *groupService) JoinGroup(c *gin.Context) *models.GroupInfo {
+func (g *groupService) JoinGroup(c *gin.Context) bool {
 	var reqBody models.GroupJoinRequest
-	if err := c.ShouldBindBodyWithJSON(&reqBody); err != nil {
-		if err.Error() == "EOF" {
-			response.BadRequestError(c, response.ErrCodeInvalidRequest, "No data provided")
-			return nil
-		}
-
-		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidRequest, utils.GetObjMessage(err))
-		return nil
+	if IsErr := utils.BindRequest(c, &reqBody); !IsErr {
+		return false
 	}
 
 	// get user_id from token
+	payload := helpers.GetPayload(c)
 
-	return nil
+	// check group exist
+	isExist, err := g.groupRepo.CheckGroupExits(global.MDB, reqBody.GroupID)
+	if err != nil {
+		response.InternalServerError(c, response.ErrCodeDBQuery, err.Error())
+		return false
+	}
+	if !isExist {
+		response.NotFoundError(c, response.ErrCodeNotFound, "Group not found")
+		return false
+	}
+
+	// check user already joined group
+	isJoined, err := g.groupRepo.CheckUserJoinedGroup(global.MDB, reqBody.GroupID, uint(payload.ID))
+	if err != nil {
+		response.InternalServerError(c, response.ErrCodeDBQuery, err.Error())
+		return false
+	}
+
+	if isJoined {
+		response.BadRequestError(c, response.ErrCodeInvalidInput, "You already joined this group")
+		return false
+	}
+
+	// join group
+	err = g.groupRepo.JoinGroup(global.MDB, reqBody.GroupID, uint(payload.ID))
+	if err != nil {
+		response.InternalServerError(c, response.ErrCodeDBQuery, err.Error())
+		return false
+	}
+
+	return true
+}
+
+// LeaveGroup is a function that leave a group service return bool value
+func (g *groupService) LeaveGroup(c *gin.Context) bool {
+	var reqBody models.GroupJoinRequest
+	if IsErr := utils.BindRequest(c, &reqBody); !IsErr {
+		return false
+	}
+
+	// check group exist
+	isExist, err := g.groupRepo.CheckGroupExits(global.MDB, reqBody.GroupID)
+	if err != nil {
+		response.InternalServerError(c, response.ErrCodeDBQuery, err.Error())
+		return false
+	}
+	if !isExist {
+		response.NotFoundError(c, response.ErrCodeNotFound, "Group not found")
+		return false
+	}
+
+	// get user_id from token
+	payload := helpers.GetPayload(c)
+
+	// check user already joined group
+	isJoined, err := g.groupRepo.CheckUserJoinedGroup(global.MDB, reqBody.GroupID, uint(payload.ID))
+	if err != nil {
+		response.InternalServerError(c, response.ErrCodeDBQuery, err.Error())
+		return false
+	}
+
+	if !isJoined {
+		response.BadRequestError(c, response.ErrCodeInvalidInput, "You not joined this group")
+		return false
+	}
+
+	// leave group
+	err = g.groupRepo.LeaveGroup(global.MDB, reqBody.GroupID, uint(payload.ID))
+	if err != nil {
+		response.InternalServerError(c, response.ErrCodeDBQuery, err.Error())
+		return false
+	}
+
+	return true
 }

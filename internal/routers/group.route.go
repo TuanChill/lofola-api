@@ -18,6 +18,7 @@ func GroupRouter(r *gin.RouterGroup) {
 		{
 			private.Use(middleware.AuthenMiddleware())
 			private.POST("/join", utils.AsyncHandler(groupController.JoinGroup))
+			private.POST("/leave", utils.AsyncHandler(groupController.LeaveGroup))
 			private.POST("/create", utils.AsyncHandler(groupController.CreateGroup))
 			private.PUT("/update", utils.AsyncHandler(groupController.UpdateGroup))
 		}

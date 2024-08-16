@@ -58,10 +58,20 @@ func (g *GroupController) SearchGroup(c *gin.Context) error {
 
 func (g *GroupController) JoinGroup(c *gin.Context) error {
 	result := g.groupService.JoinGroup(c)
-	if result == nil {
+	if !result {
 		return nil
 	}
 
 	response.Ok(c, "Join Group Successfully", result)
+	return nil
+}
+
+func (g *GroupController) LeaveGroup(c *gin.Context) error {
+	result := g.groupService.LeaveGroup(c)
+	if !result {
+		return nil
+	}
+
+	response.Ok(c, "Leave Group Successfully", result)
 	return nil
 }
