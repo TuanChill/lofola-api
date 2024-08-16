@@ -87,14 +87,7 @@ func (g *groupService) GetGroup(c *gin.Context) *models.GroupInfo {
 // UpdateGroup is a function that update a group
 func (g *groupService) UpdateGroup(c *gin.Context) *models.GroupInfo {
 	var reqBody models.GroupUpdateRequest
-
-	if err := c.ShouldBindBodyWithJSON(&reqBody); err != nil {
-		if err.Error() == "EOF" {
-			response.BadRequestError(c, response.ErrCodeInvalidRequest, "No data provided")
-			return nil
-		}
-
-		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidRequest, utils.GetObjMessage(err))
+	if IsErr := utils.BindRequest(c, &reqBody); !IsErr {
 		return nil
 	}
 
@@ -153,13 +146,7 @@ func (g *groupService) UpdateGroup(c *gin.Context) *models.GroupInfo {
 func (g *groupService) CreateGroup(c *gin.Context) *models.GroupInfo {
 	var reqBody models.GroupCreateRequest
 
-	if err := c.ShouldBindBodyWithJSON(&reqBody); err != nil {
-		if err.Error() == "EOF" {
-			response.BadRequestError(c, response.ErrCodeInvalidRequest, "No data provided")
-			return nil
-		}
-
-		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidRequest, utils.GetObjMessage(err))
+	if IsErr := utils.BindRequest(c, &reqBody); !IsErr {
 		return nil
 	}
 
@@ -204,8 +191,6 @@ func (g *groupService) GetInfoGroup(c *gin.Context) *models.GroupInfo {
 
 func (g *groupService) SearchGroup(c *gin.Context) *models.GroupListResponse {
 	var reqParam models.SearchParam
-
-	// keyword := c.Query("keyword")
 
 	if err := helpers.ValidateRequestSearch(c, &reqParam); err != nil {
 		return nil
