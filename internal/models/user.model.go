@@ -20,16 +20,16 @@ type User struct {
 }
 
 type UserInfo struct {
-	ID       uint      `json:"id"`
-	UserName string    `json:"username"`
-	Email    string    `json:"email"`
-	Phone    string    `json:"phone"`
-	FullName string    `json:"full_name"`
-	BirthDay time.Time `json:"birthday"`
-	Avatar   string    `json:"avatar"`
-	Gender   bool      `json:"gender"`
-	CreateAt time.Time `json:"create_at"`
-	UpdateAt time.Time `json:"update_at"`
+	ID       uint       `json:"id"`
+	UserName string     `json:"username"`
+	Email    string     `json:"email"`
+	Phone    string     `json:"phone"`
+	FullName string     `json:"full_name"`
+	BirthDay *time.Time `json:"birthday"`
+	Avatar   string     `json:"avatar"`
+	Gender   *bool      `json:"gender"`
+	CreateAt time.Time  `json:"create_at"`
+	UpdateAt *time.Time `json:"update_at"`
 }
 
 // otp

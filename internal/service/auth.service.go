@@ -220,13 +220,13 @@ func (a *authService) Login(c *gin.Context) *models.UserInfo {
 		ID:       user.ID,
 		UserName: user.UserName,
 		Email:    user.Email,
-		Phone:    *user.Phone,
-		FullName: *user.FullName,
-		BirthDay: *user.BirthDay,
+		Phone:    utils.SafeDereferenceString(user.Phone),
+		FullName: utils.SafeDereferenceString(user.FullName),
+		BirthDay: user.BirthDay,
 		Avatar:   user.Avatar,
-		Gender:   *user.Gender,
+		Gender:   user.Gender,
 		CreateAt: user.CreateAt,
-		UpdateAt: *user.UpdateAt,
+		UpdateAt: user.UpdateAt,
 	}
 }
 

@@ -36,7 +36,7 @@ func InitMysql() {
 	SetPool()
 
 	// migrateTables
-	migrateTables()
+	// migrateTables()
 }
 
 func SetPool() {
