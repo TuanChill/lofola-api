@@ -1,6 +1,7 @@
 package initialize
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/spf13/viper"
@@ -8,7 +9,12 @@ import (
 )
 
 func LoadConfig(path string) {
-	viper.SetConfigName("config")
+	mode := flag.String("env", "dev", "application running mode")
+
+	// Parse the command-line flags
+	flag.Parse()
+
+	viper.SetConfigName(*mode)
 	viper.AddConfigPath(path)
 	viper.SetConfigType("yaml")
 	viper.AutomaticEnv()

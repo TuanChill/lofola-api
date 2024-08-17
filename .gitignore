@@ -23,5 +23,6 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-/configs/yaml/*.yaml
+/configs/yaml/dev.yaml
+/configs/yaml/pro.yaml
 /uploads/avatar/

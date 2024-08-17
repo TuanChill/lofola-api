@@ -1,8 +1,14 @@
 serve:  
 	go run ./cmd/server/main.go
 
+serve_prod:  
+	go run ./cmd/server/main.go -env=pro
+
 build:
 	go build -o bin/lofola ./cmd/server/main.go
+
+build_prod:
+	go build -o bin/lofola ./cmd/server/main.go -env=pro
 
 build_docker:
 	docker build -f deployments/Dockerfile -t lofola:0.0.1 .
