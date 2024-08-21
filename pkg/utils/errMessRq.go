@@ -31,6 +31,8 @@ func getErrorMsg(fe validator.FieldError) string {
 		return "This field must have length " + fe.Param()
 	case "birthday":
 		return "Invalid birthdate format, must be YYYY-MM-DD"
+	case "gt":
+		return "Should be greater than " + fe.Param()
 	}
 
 	return "Unknown error"

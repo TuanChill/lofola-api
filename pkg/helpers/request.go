@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/tuanchill/lofola-api/internal/models"
 	"github.com/tuanchill/lofola-api/pkg/response"
 	"github.com/tuanchill/lofola-api/pkg/utils"
 )
@@ -49,12 +48,12 @@ func ValidateRequestBody(c *gin.Context, data interface{}) error {
 	return nil
 }
 
-// ValidateRequestSearch is a function that validate request search param
-func ValidateRequestSearch(c *gin.Context, data *models.SearchParam) error {
+// ValidateRequest is a function that validates request parameters for any given struct
+func ValidateRequest(c *gin.Context, data interface{}) error {
 	if err := c.ShouldBindQuery(data); err != nil {
-		if err == err.(*strconv.NumError) {
+		if numErr, ok := err.(*strconv.NumError); ok {
 			response.BadRequestError(c, response.ErrCodeInvalidRequest, "Page and Limit must be a number")
-			return err
+			return numErr
 		}
 		response.BadRequestErrorWithFields(c, response.ErrCodeInvalidRequest, utils.GetObjMessage(err))
 		return err

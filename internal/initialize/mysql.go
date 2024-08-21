@@ -36,7 +36,7 @@ func InitMysql() {
 	SetPool()
 
 	// migrateTables
-	// migrateTables()
+	migrateTables()
 }
 
 func SetPool() {
@@ -57,6 +57,10 @@ func migrateTables() {
 		&models.User{},
 		&models.Group{},
 		&models.GroupUser{},
+		&models.Province{},
+		&models.District{},
+		&models.Ward{},
+		&models.Restaurant{},
 	)
 	if err != nil {
 		panic("failed to migrate tables :: " + err.Error())

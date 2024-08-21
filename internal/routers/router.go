@@ -42,6 +42,7 @@ func NewRouter() *gin.Engine {
 			AuthRouter(v1)
 			UserRouter(v1)
 			GroupRouter(v1)
+			LocationRouter(v1)
 		}
 	}
 

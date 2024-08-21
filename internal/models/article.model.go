@@ -11,3 +11,9 @@ type Article struct {
 	CreateAt    time.Time  `json:"create_at" gorm:"default:CURRENT_TIMESTAMP()"`
 	UpdateAt    *time.Time `json:"update_at"`
 }
+
+type ImgOfArticle struct {
+	ID        uint   `json:"id" gorm:"primaryKey"`
+	ArticleID uint   `json:"article_id" gorm:"not null"`
+	ImgURL    string `json:"img_url" gorm:"size:255;not null"`
+}

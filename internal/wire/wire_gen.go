@@ -34,6 +34,15 @@ func InitGroupRouterHandler() (*controller.GroupController, error) {
 	return groupController, nil
 }
 
+// Injectors from location.wire.go:
+
+func InitLocationRouterHandler() (*controller.LocationController, error) {
+	iLocationRepo := repo.NewLocationRepo()
+	iLocationService := service.NewLocationService(iLocationRepo)
+	locationController := controller.NewLocationController(iLocationService)
+	return locationController, nil
+}
+
 // Injectors from user.wire.go:
 
 func InitUserRouterHandler() (*controller.UserController, error) {

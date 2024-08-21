@@ -7,8 +7,8 @@ serve_prod:
 build:
 	go build -o bin/lofola ./cmd/server/main.go
 
-build_prod:
-	go build -o bin/lofola ./cmd/server/main.go -env=pro
+run_prod:
+	./bin/lofola -env=pro
 
 build_docker:
 	docker build -f deployments/Dockerfile -t lofola:0.0.1 .

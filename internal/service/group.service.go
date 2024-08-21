@@ -192,7 +192,7 @@ func (g *groupService) GetInfoGroup(c *gin.Context) *models.GroupInfo {
 func (g *groupService) SearchGroup(c *gin.Context) *models.GroupListResponse {
 	var reqParam models.SearchParam
 
-	if err := helpers.ValidateRequestSearch(c, &reqParam); err != nil {
+	if err := helpers.ValidateRequest(c, &reqParam); err != nil {
 		return nil
 	}
 

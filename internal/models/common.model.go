@@ -8,6 +8,6 @@ type MetaData struct {
 
 type SearchParam struct {
 	KeyWord string `form:"keyword" json:"keyword" binding:"omitempty"`
-	Page    int    `form:"page" json:"page" binding:"omitempty,gt=0" `
-	Limit   int    `form:"limit" json:"limit" binding:"omitempty,gt=0,lte=50"`
+	Page    int    `form:"page" json:"page" binding:"omitempty,gte=1" `
+	Limit   int    `form:"limit" json:"limit" binding:"omitempty,gte=10,lte=100"`
 }
