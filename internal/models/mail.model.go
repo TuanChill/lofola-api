@@ -14,3 +14,10 @@ type EmailData struct {
 	Subject string
 	Body    string
 }
+
+type DataWelcomeMail struct {
+	Title       string
+	To          string
+	Name        string
+	CurrentTime string
+}

@@ -68,3 +68,32 @@ func SendOptMail(data models.DataOtpMail) error {
 	}
 	return nil
 }
+
+func SendWelcomeMail(data models.DataWelcomeMail) error {
+	// Parse the template file
+	tmpl, err := template.ParseFiles("./templates/welcome.html")
+	if err != nil {
+		logger.LogError(fmt.Sprintf("Failed to parse template: %v", err))
+		return err
+	}
+
+	// Execute the template with data
+	var body bytes.Buffer
+	if err := tmpl.Execute(&body, data); err != nil {
+		logger.LogError(fmt.Sprintf("Failed to execute template: %v", err))
+		return err
+	}
+
+	// send email
+	emailData := models.EmailData{
+		From:    global.Config.Mail.UserName,
+		To:      data.To,
+		Subject: data.Title,
+		Body:    body.String(),
+	}
+
+	if err := SendMail(emailData); err != nil {
+		return err
+	}
+	return nil
+}

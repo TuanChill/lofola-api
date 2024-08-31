@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to [App Name]</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #4CAF50;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+            color: white;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .content p {
+            margin: 0 0 10px;
+        }
+        .content a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #777777;
+            font-size: 12px;
+        }
+        .footer a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to Lofola</h1>
+        </div>
+        <div class="content">
+            <p>Hi {{.Name}},</p>
+            <p>Thank you for signing up for our application. We are thrilled to welcome you to the Lofola community!</p>
+            <p>Start exploring the amazing features we offer. If you need any assistance or have questions, feel free to reach out to us.</p>
+            <p>You can start using our app right now by clicking the button below:</p>
+            <p style="text-align: center;">
+                <a href="[Login Link]" style="background-color: #4CAF50; color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none;">Login</a>
+            </p>
+            <p>Thank you again for choosing Lofola.</p>
+            <p>Best regards,<br>Lofola</p>
+        </div>
+        <div class="footer">
+            <p>You received this email because you signed up for Lofola. If you no longer wish to receive emails from us, you can unsubscribe Lofola.</p>
+            <p>&copy; {{.CurrentTime}} Lofola. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -17,6 +17,7 @@ import (
 	"github.com/tuanchill/lofola-api/pkg/logger"
 	"github.com/tuanchill/lofola-api/pkg/response"
 	"github.com/tuanchill/lofola-api/pkg/utils"
+	"github.com/tuanchill/lofola-api/pkg/utils/crypto"
 	"gorm.io/gorm"
 )
 
@@ -109,6 +110,21 @@ func (a *authService) Register(c *gin.Context) *models.UserResponseBody {
 		return nil
 	}
 
+	// send welcome email asynchronously
+	go func() {
+		welcomeMailData := models.DataWelcomeMail{
+			Title:       "Welcome to Lofola",
+			To:          reqBody.Email,
+			Name:        reqBody.UserName,
+			CurrentTime: helpers.GetCurrentTime(),
+		}
+
+		if err := mailer.SendWelcomeMail(welcomeMailData); err != nil {
+			// Log error if needed, but do not block the main process
+			logger.LogError(fmt.Sprintf("Failed to send welcome email to %s: %v\n", reqBody.Email, err))
+		}
+	}()
+
 	// hash password
 	hashedPassword, err := helpers.HashPassword(reqBody.Password)
 	if err != nil {
@@ -127,6 +143,9 @@ func (a *authService) Register(c *gin.Context) *models.UserResponseBody {
 
 	// send email verification asynchronously
 	go func(user models.User) {
+		// hash email
+		hashEmail := crypto.GetHash(user.Email)
+
 		otp := helpers.GenerateOTP(6)
 		otpMailData := models.DataOtpMail{
 			Title:  "OTP Verification",
@@ -136,9 +155,16 @@ func (a *authService) Register(c *gin.Context) *models.UserResponseBody {
 			Name:   user.UserName,
 		}
 
+		// save otp to cache
+		if err := a.otpRepo.SaveOtpKey(c, global.RDB, hashEmail, otp); err != nil {
+			logger.LogError(fmt.Sprintf("Failed to save OTP for user %s: %v\n", user.Email, err))
+			return
+		}
+
 		if err := mailer.SendOptMail(otpMailData); err != nil {
-			// Log error if needed, but do not block the main process
 			logger.LogError(fmt.Sprintf("Failed to send OTP email to %s: %v\n", user.Email, err))
+			// clear otp of this email from cache if send error
+			a.otpRepo.DeleteOtpKey(c, global.RDB, user.Email)
 		}
 	}(newUser)
 
@@ -256,8 +282,11 @@ func (a *authService) Verify(c *gin.Context) bool {
 		return false
 	}
 
+	// hash email
+	hashEmail := crypto.GetHash(user.Email)
+
 	// check otp
-	otp, err := a.otpRepo.GetOtpKey(c, global.RDB, reqBody.Email)
+	otp, err := a.otpRepo.GetOtpKey(c, global.RDB, hashEmail)
 	if err != nil {
 		response.BadRequestError(c, response.ErrCodeResourceConflict, err.Error())
 		return false
@@ -315,8 +344,11 @@ func (a *authService) ResendOtp(c *gin.Context) bool {
 		return false
 	}
 
+	// hash email
+	hashEmail := crypto.GetHash(user.Email)
+
 	// check otp already sent
-	if err := a.checkOtpAlreadySent(c, reqBody.Email); err != nil {
+	if err := a.checkOtpAlreadySent(c, hashEmail); err != nil {
 		response.BadRequestError(c, response.ErrCodeResourceConflict, err.Error())
 		return false
 	}
@@ -334,15 +366,15 @@ func (a *authService) ResendOtp(c *gin.Context) bool {
 	}
 
 	// save otp to cache
-	if err := a.otpRepo.SaveOtpKey(c, global.RDB, reqBody.Email, otp); err != nil {
-		response.InternalServerError(c, response.ErrCodeInternalServer, "Failed to save OTP")
+	if err := a.otpRepo.SaveOtpKey(c, global.RDB, hashEmail, otp); err != nil {
+		response.InternalServerError(c, response.ErrCodeCacheQuery, "Failed to save OTP")
 		return false
 	}
 
 	if err := mailer.SendOptMail(otpMailData); err != nil {
-		response.InternalServerError(c, response.ErrCodeInternalServer, "Failed to send email verification")
+		response.InternalServerError(c, response.ErrCodeMailError, "Failed to send email verification")
 		// clear otp of this email from cache if send error
-		a.otpRepo.DeleteOtpKey(c, global.RDB, reqBody.Email)
+		a.otpRepo.DeleteOtpKey(c, global.RDB, hashEmail)
 		return false
 	}
 

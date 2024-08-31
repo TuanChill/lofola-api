@@ -119,6 +119,9 @@ const (
 	// ErrCodeExternalServiceUnavailable indicates the external service is currently unavailable.
 	ErrCodeExternalServiceUnavailable = 6002
 
+	// ErrCodeMailError indicates the mail error
+	ErrCodeMailError = 6003
+
 	//* Network errors
 	// ErrCodeNetworkUnavailable indicates the network is unavailable.
 	ErrCodeNetworkUnavailable = 7000
